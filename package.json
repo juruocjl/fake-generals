@@ -1,0 +1,17 @@
+{
+  "name": "juanlaoshi",
+  "version": "1.0.0",
+  "description": "fake generals",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "juruocjl",
+  "license": "ISC",
+  "dependencies": {
+    "@icon-park/svg": "^1.4.2",
+    "express": "^4.18.1",
+    "node-uuid": "^1.4.8",
+    "nodejs-websocket": "^1.7.2"
+  }
+}
