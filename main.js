@@ -1,7 +1,7 @@
 var express = require('express')
 var app = express();
 const io = require('nodejs-websocket')
-const uuid = require('node-uuid');
+const uuid = require('uuid');
 app.use('/pages',express.static('pages'))
 app.get('/', function (req,res) {
    res.sendFile(__dirname+"/pages/"+"index.html" );
@@ -14,13 +14,15 @@ class Deque {
 	popFront(){return this.items[this.lowestCount++];};
 	popBack() {return this.items[--this.count];};
 	size(){return this.count-this.lowestCount;}
+	clear(){this.count=this.lowestCount=0;}
 };
 var start=false;
 var canjoin=true;
 var players=[];
 var map=[];
-const n=10,m=10;
+const n=20,m=20;
 const k=25;
+const eachturn=300;
 var turn=0;
 var ws=io.createServer(connection=>{
 	console.log('new connection...')
@@ -124,7 +126,7 @@ var ws=io.createServer(connection=>{
 									console.log(err);
 								}
 							});
-						},1000);
+						},eachturn);
 				},1000)
 			}
 		}
@@ -151,13 +153,23 @@ var ws=io.createServer(connection=>{
 					}
 					tmp[i]=line;
 				}
-				console.log(tmp);
+				//console.log(tmp);
 				connection.send(JSON.stringify({'typ':'map','map':tmp,'queue':players[id].queue.to_array()}))
 			}
 		}
 		if(data.typ=='add queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
 				players[id].queue.addBack(data.data);
+			}
+		}
+		if(data.typ=='pop queue'){
+			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+				if(players[id].queue.size())players[id].queue.popBack();
+			}
+		}
+		if(data.typ=='clear queue'){
+			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+				if(players[id].queue.size())players[id].queue.clear();
 			}
 		}
 	})
