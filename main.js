@@ -109,8 +109,16 @@ var ws=io.createServer(connection=>{
 													if(map[xx][yy][1]==i)map[xx][yy][2]+=val;
 													else{
 														if(val>map[xx][yy][2]){
+															if(map[xx][yy][0]==2){
+																var dead=map[xx][yy][1];
+																players[dead].alive=false;
+																for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
+																	map[x][y][1]=i;
+																map[xx][yy][0]=1;
+															}
 															map[xx][yy][2]=val-map[xx][yy][2];
 															map[xx][yy][1]=i;
+															
 														}
 														else
 															map[xx][yy][2]-=val;
@@ -133,7 +141,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='get uid'){
 			if(canjoin){
 				var id=uuid.v1();
-				players[players.length]={"name":data.name,"uid":id,'queue':new Deque()};
+				players[players.length]={"name":data.name,"uid":id,'queue':new Deque(),'alive':true};
 				connection.send(JSON.stringify({'typ':'uid','uid':id}));
 			}
 		}

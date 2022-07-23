@@ -64,10 +64,11 @@
 	var now = 30;
 	function bbimg() {
 		now += event.wheelDelta / 40;
-		now = Math.max(20, now);
+		now = Math.max(26, now);
 		now = Math.min(50, now);
 		$(".cell").css('height', now + 'px');
 		$(".cell").css('width', now + 'px');
+		$(".map").css('font-size',Math.min(18,Math.floor((now+32)/4))+'px');
 	}
 	function setCookie(cname, cvalue) {
 		var d = new Date();
@@ -116,7 +117,7 @@
 		clear(){this.count=this.lowestCount=0;}
 	};
 	Q = new Deque();
-	const color=["red","blue"];
+	const color=["red","blue","green","purple","brown","pink","orange"];
 	var firstmap,userlist;
 	var n,m;
 	var nowx=-1,nowy=-1,op=0;
