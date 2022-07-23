@@ -29,6 +29,7 @@
 	.visible{box-shadow: black 0px 0px 0px 1px;box-sizing: border-box;}
 	.nowpos{box-shadow: white 0px 0px 0px 3px;box-sizing: border-box;z-index:10;}
 	.turn{position:fixed;top:0;left:0;padding:10px;border: 1px solid black;z-index:20;background:white;}
+	.rank{position:fixed;top:0;right:0;border: 1px solid black;z-index:20;background:white;}
 	</style>
 	<div class="index">
 		<div class="contain">
@@ -37,6 +38,16 @@
 		</div>
 	</div>
 	<div class="turn">turn <span id="turn">?</span></div>
+	<div class="rank">
+	<table><tbody id="rank">
+		<tr>
+			<th>id</th>
+			<th>name</th>
+			<th>army</th>
+			<th>land</th>
+		</tr>
+	</tbody></table>
+	</div>
 	<table cellspacing="0" cellpadding="0" border="0">
 		 <tbody class="map"  style="display:none;">
 		 </tbody>
@@ -219,7 +230,7 @@
 		}
 		if(data.typ=='first map'){
 			firstmap = data.data;
-			userlist = data.user;
+			userlist = data.users;
 			n=firstmap.length;
 			m=firstmap[0].length;
 			for(var i=0;i<n;i++)
@@ -242,6 +253,8 @@
 					vis[i][j]=[0,0,0,0];
 				}
 			}
+			for(var i=0;i<userlist.length;i++)
+				$('#rank').append('<tr data="'+i+'"></tr>')
 		}
 		if(data.typ=='new turn'){
 			ws.send(JSON.stringify({
@@ -254,6 +267,10 @@
 			map=data.map;
 			Q.from_array(data.queue);
 			show();
+			for(var i=0;i<userlist.length;i++){
+				$('#rank >tr[data='+i+']').html('<td>'+i+'</td><td style="color:white;background:'+color[i]+'">'+userlist[i]+'</td><td>'+data.rank[i][0]+'</td><td>'+data.rank[i][1]+'</td>')
+			}
+				
 		}
 	};
 	</script>

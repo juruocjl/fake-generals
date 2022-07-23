@@ -20,10 +20,11 @@ var start=false;
 var canjoin=true;
 var players=[];
 var map=[];
-const n=20,m=20;
+const n=40,m=40;
 const k=25;
-const eachturn=300;
+const eachturn=600;
 var turn=0;
+var rank=[];
 var ws=io.createServer(connection=>{
 	console.log('new connection...')
 	connection.on("text",(data)=>{
@@ -134,6 +135,12 @@ var ws=io.createServer(connection=>{
 									console.log(err);
 								}
 							});
+							for(var i=0;i<players.length;i++)
+								rank[i]=[0,0];
+							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]>=0&&map[i][j][1]>=0){
+								rank[map[i][j][1]][1]++;
+								rank[map[i][j][1]][0]+=map[i][j][2];
+							}
 						},eachturn);
 				},1000)
 			}
@@ -162,7 +169,7 @@ var ws=io.createServer(connection=>{
 					tmp[i]=line;
 				}
 				//console.log(tmp);
-				connection.send(JSON.stringify({'typ':'map','map':tmp,'queue':players[id].queue.to_array()}))
+				connection.send(JSON.stringify({'typ':'map','map':tmp,'queue':players[id].queue.to_array(),'rank':rank}));
 			}
 		}
 		if(data.typ=='add queue'){
