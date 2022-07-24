@@ -30,18 +30,22 @@
 	.nowpos{box-shadow: white 0px 0px 0px 3px;box-sizing: border-box;z-index:10;}
 	.turn{position:fixed;top:0;left:0;padding:10px;border: 1px solid black;z-index:20;background:white;}
 	.rank{position:fixed;top:0;right:0;border: 1px solid black;z-index:20;background:white;}
+	.gameend{position:fixed;top:50%;left:50%;transform: translate(-50%, -50%);background:white;padding:20px;text-align:center;z-index:40;}
 	</style>
 	<div class="index">
 		<div class="contain">
 		<div id="name" class="name"></div>
 		<button id="start">Start!</button>
+		<div>当前在线：<span id="online">?</span>人</div>
 		</div>
+	</div>
+	<div class="gameend" style="display:none">
 	</div>
 	<div class="turn">turn <span id="turn">?</span></div>
 	<div class="rank">
 	<table><tbody id="rank">
 		<tr>
-			<th>id</th>
+			<th>rank</th>
 			<th>name</th>
 			<th>army</th>
 			<th>land</th>
@@ -128,7 +132,7 @@
 		clear(){this.count=this.lowestCount=0;}
 	};
 	Q = new Deque();
-	const color=["red","blue","green","purple","brown","pink","orange"];
+	const color=["red","blue","green","purple","brown","orange","pink"];
 	var firstmap,userlist;
 	var n,m;
 	var nowx=-1,nowy=-1,op=0;
@@ -171,22 +175,42 @@
 				if(vis[i][j][2])inner+="<span class='left'></span>";
 				if(vis[i][j][3])inner+="<span class='right'></span>";
 				if(now.innerHTML!=inner)now.innerHTML=inner;
-				if(i==nowx&&j==nowy)now.classList.add("nowpos");
+				if(i==nowx&&j==nowy){
+					now.classList.add("nowpos");
+					if(op)console.log(now),now.firstChild.innerHTML="50%";
+				}
 				else now.classList.remove("nowpos");
 			}
 		}
 	};
+	function showrk(rank){
+		var arr=[];
+		for(var i=0;i<userlist.length;i++)
+			arr[i]={'name':userlist[i],'color':color[i],'army':rank[i][0],'land':rank[i][1]};
+		arr.sort((a,b)=>{
+			if(a.army!=b.army)return b.army-a.army;
+			if(a.land!=b.land)return b.land-a.land;
+			return a.color<b.color?1:-1;
+		});
+		for(var i=0;i<userlist.length;i++)
+			$('#rank >tr[data='+i+']').html('<td>'+(i+1)+'</td><td style="color:white;background:'+arr[i].color+'">'+arr[i].name+'</td><td>'+arr[i].army+'</td><td>'+arr[i].land+'</td>')
+	}
 	function setnow(a,b){
-		if(nowx!=-1&&nowy!=-1&&Math.abs(nowx-a)+Math.abs(nowy-b)<=1){
+		console.log(nowx,nowy,op,a,b);
+		if(nowx!=-1&&nowy!=-1&&Math.abs(nowx-a)+Math.abs(nowy-b)==1){
 			var d;
 			if(a==nowx-1)d=0;
 			if(a==nowx+1)d=1;
 			if(b==nowy-1)d=2;
 			if(b==nowy+1)d=3;
-			ws.send(JSON.stringify({'typ':'add queue','uid':uid,'data':[nowx,nowy,d]}))
 			Q.addBack([nowx,nowy,d]);
-		}
-		nowx=a,nowy=b;
+			ws.send(JSON.stringify({'typ':'add queue','uid':uid,'data':[nowx,nowy,op*4+d]}))
+			nowx=a,nowy=b,op=0;
+		}else if(nowx==a&&nowy==b){
+			if(op==0)op=1;
+			else op=0,nowx=-1,nowy=-1;
+			console.log(op);
+		}else nowx=a,nowy=b,op=0;
 		show();
 	}
 	document.onkeydown=function(event){
@@ -207,23 +231,24 @@
 	   }if(e && e.keyCode==81){
 		    if(Q.size()){
 				Q.clear();
+				show();
 				ws.send(JSON.stringify({'typ':'clear queue','uid':uid}));
 			}
 	   }
     };
 	ws.onmessage = (evt)=>{
-		//console.log(evt.data);
 		var data = JSON.parse(evt.data);
 		if (data.typ == 'already start'){
 			alert('已经开始，请关闭页面');
 			location.href=location.href;
 		}
-		if (data.typ == 'start')
+		if (data.typ == 'start'){
 			ws.send(JSON.stringify({
 				'typ': 'get uid',
 				'name': user
 			}));
-			document.querySelector(".index").style.display='none';
+			$(".index").css('display','none');
+		}
 		if (data.typ == 'uid') {
 			uid = data.uid;
 			console.log('您的uid是', uid);
@@ -245,8 +270,8 @@
 					var now=line.children('td')[j];
 					(()=>{
 						var a=i,b=j;
-						now.onclick=()=>{
-							if(map[a][b][0]!=-1)
+						now.onmousedown=(e)=>{
+							if(e.button==0&&map[a][b][0]!=-1)
 								setnow(a,b);
 						}
 					})();
@@ -267,10 +292,19 @@
 			map=data.map;
 			Q.from_array(data.queue);
 			show();
-			for(var i=0;i<userlist.length;i++){
-				$('#rank >tr[data='+i+']').html('<td>'+i+'</td><td style="color:white;background:'+color[i]+'">'+userlist[i]+'</td><td>'+data.rank[i][0]+'</td><td>'+data.rank[i][1]+'</td>')
-			}
-				
+			showrk(data.rank);
+		}
+		if(data.typ=='new connection'){
+			$('#online').text(data.cnt);
+		}
+		if(data.typ=='end'){
+			ws.close();
+			map=data.lstmap;
+			show();
+			showrk(data.lstrank);
+			$('.gameend').css('display','block');
+			$('.gameend').html('最后的胜利者是 '+userlist[data.winner]+'<br><br><button id="okok">ok</button>');
+			$('#okok').click(()=>{$('.gameend').css('display','none');});
 		}
 	};
 	</script>
