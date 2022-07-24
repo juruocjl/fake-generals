@@ -2,9 +2,8 @@ var express = require('express')
 var app = express();
 const io = require('nodejs-websocket')
 const uuid = require('uuid');
-app.use('/pages',express.static('pages'))
 app.get('/', function (req,res) {
-   res.sendFile(__dirname+"/pages/"+"index.html" );
+   res.sendFile(__dirname+"/index.html" );
 })
 class Deque {
 	constructor() {this.items = [];this.count = 0;this.lowestCount = 0;}
@@ -25,6 +24,7 @@ const k=25;
 const eachturn=600;
 var turn=0;
 var rank=[];
+var lst=-1;
 var ws=io.createServer(connection=>{
 	console.log('new connection...')
 	connection.on("text",(data)=>{
@@ -46,7 +46,7 @@ var ws=io.createServer(connection=>{
 						var line=[];
 						for(var j=0;j<m;j++){
 							var x=Math.random();
-							if(x<0.05)line[j]=[-1,0,0];
+							if(x<0.08)line[j]=[-1,0,0];
 							else if(x<0.1)line[j]=[1,-1,Math.floor(Math.random()*10)+40];
 							else line[j]=[0,-1,0];
 						}
@@ -71,15 +71,12 @@ var ws=io.createServer(connection=>{
 					var users=[];
 					players.forEach((x)=>{users[users.length]=x.name});
 					ws.connections.forEach((connection)=>{
-						try{
-							connection.send(JSON.stringify({'typ':'first map','data':firstmap,'users':users}));
-						}catch(err){
-							console.log(err);
-						}
+						connection.send(JSON.stringify({'typ':'first map','data':firstmap,'users':users}));
 					});
 					var timer=setInterval(
 						()=>{
 							++turn;
+							console.log('turn',turn);
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
 									if(map[i][j][0]==1&&map[i][j][1]>=0)
@@ -128,18 +125,31 @@ var ws=io.createServer(connection=>{
 												}
 								}
 							}
-							ws.connections.forEach((connection)=>{
-								try{
-									connection.send(JSON.stringify({'typ':'new turn','turn':turn}));
-								}catch(err){
-									console.log(err);
-								}
-							});
+							
+							var nowalive=0;
 							for(var i=0;i<players.length;i++)
-								rank[i]=[0,0];
+								rank[i]=[0,0],nowalive+=players[i].alive;
 							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]>=0&&map[i][j][1]>=0){
 								rank[map[i][j][1]][1]++;
 								rank[map[i][j][1]][0]+=map[i][j][2];
+							}
+							if(nowalive==1){
+								for(var winner=0;winner<players.length;winner++)if(players[winner].alive)
+									ws.connections.forEach((connection)=>{
+										connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner}));
+								});
+								start=false;
+								canjoin=true;
+								players=[];
+								map=[];
+								turn=0;
+								rank=[];
+								lst=-1;
+								clearInterval(timer);
+							}else{
+								ws.connections.forEach((connection)=>{
+									connection.send(JSON.stringify({'typ':'new turn','turn':turn}));
+								});
 							}
 						},eachturn);
 				},1000)
@@ -169,6 +179,7 @@ var ws=io.createServer(connection=>{
 					tmp[i]=line;
 				}
 				//console.log(tmp);
+				
 				connection.send(JSON.stringify({'typ':'map','map':tmp,'queue':players[id].queue.to_array(),'rank':rank}));
 			}
 		}
@@ -189,12 +200,15 @@ var ws=io.createServer(connection=>{
 		}
 	})
 	connection.on("close", function (code, reason) {
-        console.log("Connection closed")
+        console.log("Connection closed");
+        if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
     })
 	connection.on("error",() => {
-		console.log('服务异常关闭...')
+		console.log('服务异常关闭...');
+        if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start'}))
+    else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 });
 ws.listen(3000)
 var server = app.listen(8081)
