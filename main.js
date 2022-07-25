@@ -2,8 +2,12 @@ var express = require('express')
 var app = express();
 const io = require('nodejs-websocket')
 const uuid = require('uuid');
+const gen = require('./gen.js')
 app.get('/', function (req,res) {
    res.sendFile(__dirname+"/index.html" );
+})
+app.get('/forkme_right_darkblue_121621.png', function (req,res) {
+   res.sendFile(__dirname+"/forkme_right_darkblue_121621.png" );
 })
 class Deque {
 	constructor() {this.items = [];this.count = 0;this.lowestCount = 0;}
@@ -19,7 +23,7 @@ var start=false;
 var canjoin=true;
 var players=[];
 var map=[];
-const n=40,m=40;
+var n,m;
 const k=25;
 const eachturn=600;
 var turn=0;
@@ -42,36 +46,14 @@ var ws=io.createServer(connection=>{
 				});
 				setTimeout(()=>{
 					canjoin=false;
-					for(var i=0;i<n;i++){
-						var line=[];
-						for(var j=0;j<m;j++){
-							var x=Math.random();
-							if(x<0.08)line[j]=[-1,0,0];
-							else if(x<0.1)line[j]=[1,-1,Math.floor(Math.random()*10)+40];
-							else line[j]=[0,-1,0];
-						}
-						map[i]=line;
-					}
-					for(var i=0;i<players.length;i++){
-						var rest=[];
-						for(var x=0;x<n;x++)for(var y=0;y<m;y++)
-							if(map[x][y][0]==0)
-								rest[rest.length]=[x,y];
-						home=rest[Math.floor(rest.length*Math.random())];
-						map[home[0]][home[1]]=[2,i,0];
-					}
-					console.log(map);
-					var firstmap=[];
-					for(var i=0;i<n;i++){
-						var line=[];
-						for(var j=0;j<m;j++)
-							line[j]=(map[i][j][0]==-1||map[i][j][0]==1)?1:0;
-						firstmap[i]=line;
-					}
+					var res=gen.genMap(players.length);
+					n=res.n;
+					m=res.m;
+					map=res.map;
 					var users=[];
 					players.forEach((x)=>{users[users.length]=x.name});
 					ws.connections.forEach((connection)=>{
-						connection.send(JSON.stringify({'typ':'first map','data':firstmap,'users':users}));
+						connection.send(JSON.stringify({'typ':'first map','n':n,'m':m,'users':users}));
 					});
 					var timer=setInterval(
 						()=>{
@@ -173,7 +155,10 @@ var ws=io.createServer(connection=>{
 						for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++)
 							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0&&map[i+dx][j+dy][1]==id)
 								flag=true;
-						if(!flag)line[j]=[-2,0,0];
+						if(!flag){
+							if(map[i][j][0]!=1&&map[i][j][0]!=-1)line[j]=[-2];
+							else line[j]=[-3];
+						}
 						else line[j]=map[i][j];
 					}
 					tmp[i]=line;
