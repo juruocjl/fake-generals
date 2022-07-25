@@ -61,7 +61,7 @@ var ws=io.createServer(connection=>{
 							console.log('turn',turn);
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
-									if(map[i][j][0]==1&&map[i][j][1]>=0)
+									if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
 										map[i][j][2]++;
 									else if(map[i][j][0]==2)
 										map[i][j][2]++;
@@ -75,36 +75,44 @@ var ws=io.createServer(connection=>{
 							for(var i=0;i<players.length;i++){
 								while(players[i].queue.size()){
 									var now=players[i].queue.popFront();
-									var xx=now[0]+ddx[now[2]%4];
-									var yy=now[1]+ddy[now[2]%4];
-									if(map[now[0]][now[1]][1]==i)
-										if(map[now[0]][now[1]][2]>1)
-											if(0<=xx&&xx<n&&0<=yy&&yy<m)
-												if(map[xx][yy][0]!=-1){
-													var val;
-													if(now[2]<4)val=map[now[0]][now[1]][2]-1;
-													else val=Math.floor(map[now[0]][now[1]][2]/2);
-													console.log(map[xx][yy],val);
-													map[now[0]][now[1]][2]-=val;
-													if(map[xx][yy][1]==i)map[xx][yy][2]+=val;
-													else{
-														if(val>map[xx][yy][2]){
-															if(map[xx][yy][0]==2){
-																var dead=map[xx][yy][1];
-																players[dead].alive=false;
-																for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
-																	map[x][y][1]=i;
-																map[xx][yy][0]=1;
+										var xx,yy;
+										if(now.length==3)xx=now[0]+ddx[now[2]%4],yy=now[1]+ddy[now[2]%4];
+										else xx=now[2],yy=now[3];
+										if(map[now[0]][now[1]][1]==i)
+											if(map[now[0]][now[1]][2]>1)
+												if(0<=xx&&xx<n&&0<=yy&&yy<m)
+													if(map[xx][yy][0]!=-1){
+														var val;
+														if((now.length==3&&now[2]<4)||(now.length==5&&now[4]==0))
+															val=map[now[0]][now[1]][2]-1;
+														else val=Math.floor(map[now[0]][now[1]][2]/2);
+														console.log(map[xx][yy],val);
+														map[now[0]][now[1]][2]-=val;
+														if(map[xx][yy][1]==i){
+															if(map[xx][yy][0]!=3)map[xx][yy][2]+=val;
+															else map[now[0]][now[1]][2]+=val;
+														}else{
+															if(val>map[xx][yy][2]){
+																if(map[xx][yy][0]==2){
+																	var dead=map[xx][yy][1];
+																	players[dead].alive=false;
+																	for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
+																		map[x][y][1]=i;
+																	map[xx][yy][0]=1;
+																}else if(map[xx][yy][0]!=3){
+																	map[xx][yy][2]=val-map[xx][yy][2];
+																	map[xx][yy][1]=i;
+																}else{
+																	map[now[0]][now[1]][2]+=val-map[xx][yy][2];
+																	map[xx][yy][2]=0;
+																	map[xx][yy][1]=i;
+																}
 															}
-															map[xx][yy][2]=val-map[xx][yy][2];
-															map[xx][yy][1]=i;
-															
+															else
+																map[xx][yy][2]-=val;
 														}
-														else
-															map[xx][yy][2]-=val;
+														break;
 													}
-													break;
-												}
 								}
 							}
 							
@@ -156,7 +164,7 @@ var ws=io.createServer(connection=>{
 							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0&&map[i+dx][j+dy][1]==id)
 								flag=true;
 						if(!flag){
-							if(map[i][j][0]!=1&&map[i][j][0]!=-1)line[j]=[-2];
+							if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)line[j]=[-2];
 							else line[j]=[-3];
 						}
 						else line[j]=map[i][j];
