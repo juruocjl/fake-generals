@@ -125,27 +125,40 @@
 			'typ': 'startgame'
 		}));
 	});
-	var uid = -1;
+	var uid=-1;
+	const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
+	var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 	class Deque {
 		constructor() {this.items = [];this.count = 0;this.lowestCount = 0;}
 		addBack(element) {this.items[this.count] = element;this.count++;};
-		to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
-		from_array(a){this.items=a;this.lowestCount=0;this.count=a.length;}
 		popFront(){return this.items[this.lowestCount++];};
 		popBack() {return this.items[--this.count];};
 		size(){return this.count-this.lowestCount;}
 		clear(){this.count=this.lowestCount=0;}
+		to_string(){var a="";for(var i=this.lowestCount;i<this.count;i++){a+=this.items[i].length;for(var j=0;j<this.items[i].length;j++)a+=base[this.items[i][j]];}return a;}
+		from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
+	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 	};
 	Q = new Deque();
 	const color=["red","blue","green","purple","brown","orange","pink"];
 	var userlist;
 	var n,m;
 	var nowx=-1,nowy=-1,op=0;
-	var map;
+	var map=[];
 	var vis=[];
+	function pred(Map,val){
+		for(var i=0;i<n;i++)
+			for(var j=0;j<m;j++){
+				if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
+					Map[i][j][2]+=val;
+					if(Map[i][j][0]>0)Map[i][j][2]++;
+				}
+			}
+		return Map;
+	}
 	function show(){
 		for(var i=0;i<n;i++)for(var j=0;j<m;j++)for(var k=0;k<4;k++)vis[i][j][k]=false;
-		Q.to_array().forEach((x)=>{vis[x[0]][x[1]][x[2]]=true;});
+		Q.to_array().forEach((x)=>{if(x.length==3)vis[x[0]][x[1]][x[2]]=true;});
 		for(var i=0;i<n;i++){
 			var line = $('.map >tr[data='+i+']')
 			for(var j=0;j<m;j++){
@@ -208,7 +221,7 @@
 			$('#rank >tr[data='+i+']').html('<td>'+(i+1)+'</td><td style="color:white;background:'+arr[i].color+'">'+arr[i].name+'</td><td>'+arr[i].army+'</td><td>'+arr[i].land+'</td>')
 	}
 	function setnow(a,b){
-		console.log(nowx,nowy,op,a,b);
+		//console.log(nowx,nowy,op,a,b);
 		if(nowx!=-1&&nowy!=-1&&Math.abs(nowx-a)+Math.abs(nowy-b)==1){
 			var d;
 			if(a==nowx-1)d=0;
@@ -282,6 +295,7 @@
 			for(var i=0;i<n;i++){
 				var line = $('.map >tr[data='+i+']')
 				vis[i]=[];
+				map[i]=[];
 				for(var j=0;j<m;j++){
 					var now=line.children('td')[j];
 					(()=>{
@@ -292,6 +306,9 @@
 						}
 					})();
 					vis[i][j]=[0,0,0,0];
+					map[i][j]=[-2];
+					if(data.firstmap[i*m+j]=="1")
+						map[i][j]=[-3];
 				}
 			}
 			for(var i=0;i<userlist.length;i++)
@@ -305,8 +322,11 @@
 			$('#turn').text(data.turn);
 		}
 		if(data.typ=='map'){
-			map=data.map;
-			Q.from_array(data.queue);
+			map=pred(map,data.val);
+			//console.log(data.diff);
+			for(var i=0;i<data.diff.length;i++)
+				map[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
+			Q.from_string(data.queue);
 			show();
 			showrk(data.rank);
 		}

@@ -9,15 +9,18 @@ app.get('/', function (req,res) {
 app.get('/forkme_right_darkblue_121621.png', function (req,res) {
    res.sendFile(__dirname+"/forkme_right_darkblue_121621.png" );
 })
+const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
+var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {
 	constructor() {this.items = [];this.count = 0;this.lowestCount = 0;}
 	addBack(element) {this.items[this.count] = element;this.count++;};
-	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
-	from_array(a){this.items=a;this.lowestCount=0;this.count=a.length;}
 	popFront(){return this.items[this.lowestCount++];};
 	popBack() {return this.items[--this.count];};
 	size(){return this.count-this.lowestCount;}
 	clear(){this.count=this.lowestCount=0;}
+	to_string(){var a="";for(var i=this.lowestCount;i<this.count;i++){a+=this.items[i].length;for(var j=0;j<this.items[i].length;j++)a+=base[this.items[i][j]];}return a;}
+	from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
+	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
 var start=false;
 var canjoin=true;
@@ -29,6 +32,16 @@ const eachturn=600;
 var turn=0;
 var rank=[];
 var lst=-1;
+function pred(Map,val){
+	for(var i=0;i<n;i++)
+		for(var j=0;j<m;j++){
+			if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
+				Map[i][j][2]+=val;
+				if(Map[i][j][0]>0)Map[i][j][2]++;
+			}
+		}
+	return Map;
+}
 var ws=io.createServer(connection=>{
 	console.log('new connection...')
 	connection.on("text",(data)=>{
@@ -38,11 +51,7 @@ var ws=io.createServer(connection=>{
 			if(!start){
 				start=true;
 				ws.connections.forEach((connection)=>{
-					try{
-						connection.send(JSON.stringify({'typ':'start'}));
-					}catch(err){
-						console.log(err);
-					}
+					connection.send(JSON.stringify({'typ':'start'}));
 				});
 				setTimeout(()=>{
 					canjoin=false;
@@ -52,8 +61,19 @@ var ws=io.createServer(connection=>{
 					map=res.map;
 					var users=[];
 					players.forEach((x)=>{users[users.length]=x.name});
+					var firstmap="";
+					for(var i=0;i<players.length;i++)
+						for(var j=0;j<n;j++){
+							players[i].lstmap[j]=[];
+							for(var k=0;k<m;k++)
+								if(map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)players[i].lstmap[j][k]=[-2];
+								else players[i].lstmap[j][k]=[-3];
+						}
+					for(var i=0;i<n;i++)for(var j=0;j<m;j++)
+						if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)firstmap+="0";
+						else firstmap+="1";
 					ws.connections.forEach((connection)=>{
-						connection.send(JSON.stringify({'typ':'first map','n':n,'m':m,'users':users}));
+						connection.send(JSON.stringify({'typ':'first map','n':n,'m':m,'firstmap':firstmap,'users':users}));
 					});
 					var timer=setInterval(
 						()=>{
@@ -115,7 +135,7 @@ var ws=io.createServer(connection=>{
 													}
 								}
 							}
-							
+							//console.log(map);
 							var nowalive=0;
 							for(var i=0;i<players.length;i++)
 								rank[i]=[0,0],nowalive+=players[i].alive;
@@ -148,32 +168,33 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='get uid'){
 			if(canjoin){
 				var id=uuid.v1();
-				players[players.length]={"name":data.name,"uid":id,'queue':new Deque(),'alive':true};
+				players[players.length]={"name":data.name,"uid":id,'queue':new Deque(),'alive':true,'lstmap':[]};
 				connection.send(JSON.stringify({'typ':'uid','uid':id}));
 			}
 		}
 		if(data.typ=='get map'){
 			//console.log(players,data);
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
-				var tmp=[];
+				players[id].lstmap=pred(players[id].lstmap,turn%k==0);
+				var diff=[];
 				for(var i=0;i<n;i++){
-					var line=[];
 					for(var j=0;j<m;j++){
-						var flag=false;
+						var flag=false,now;
 						for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++)
 							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0&&map[i+dx][j+dy][1]==id)
 								flag=true;
 						if(!flag){
-							if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)line[j]=[-2];
-							else line[j]=[-3];
+							if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)now=[-2];
+							else now=[-3];
+						}else now=JSON.parse(JSON.stringify(map[i][j]));
+						if(now.toString()!=players[id].lstmap[i][j].toString()){
+							players[id].lstmap[i][j]=now;
+							diff[diff.length]=[i,j,now];
+							//console.log(id,i,j,now);
 						}
-						else line[j]=map[i][j];
 					}
-					tmp[i]=line;
 				}
-				//console.log(tmp);
-				
-				connection.send(JSON.stringify({'typ':'map','map':tmp,'queue':players[id].queue.to_array(),'rank':rank}));
+				connection.send(JSON.stringify({'typ':'map','val':turn%k==0,'diff':diff,'queue':players[id].queue.to_string(),'rank':rank}));
 			}
 		}
 		if(data.typ=='add queue'){

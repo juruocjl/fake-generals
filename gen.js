@@ -1,11 +1,12 @@
-const n=42,m=42;
+const B=14;
+const n=3*B,m=3*B;
 function checkMap(map){
 	var players=[],vis=[];
 	for(var i=0;i<n;i++)for(var j=0;j<m;j++)
 		if(map[i][j][0]==2)players[players.length]=[i,j];
 	for(var i=0;i<players.length;i++)
 		for(var j=i+1;j<players.length;j++)
-			if(Math.abs(players[i][0]-players[j][0])+Math.abs(players[i][1]-players[j][1])<10)
+			if(Math.abs(players[i][0]-players[j][0])+Math.abs(players[i][1]-players[j][1])<B-2)
 				return false;
 	for(var i=0;i<n;i++){
 		vis[i]=[];
@@ -43,21 +44,23 @@ function genMap(cnt){
 		map[i]=line;
 	}
 	var rangelist=[];
-	for(var i=0;i<3;i++)for(var j=0;j<3;j++)if(i!=1||j!=1)
-		rangelist[rangelist.length]=[i*14,i*14+14,j*14,j*14+14];
+	for(var i=0;i<3;i++)for(var j=0;j<3;j++)
+		rangelist[rangelist.length]=[i*B,i*B+B,j*B,j*B+B];
 	rangelist.sort(()=>{return Math.random()-0.5});
 	for(var i=0;i<cnt;i++){
 		var arr=[],pos,rest=[];
-		for(var j=rangelist[i%8][0];j<rangelist[i%8][1];j++)
-			for(var k=rangelist[i%8][2];k<rangelist[i%8][3];k++)
+		for(var j=rangelist[i%9][0];j<rangelist[i%9][1];j++)
+			for(var k=rangelist[i%9][2];k<rangelist[i%9][3];k++)
 				if(map[j][k][0]==0)
 					arr[arr.length]=[j,k];
+		if(!arr.length)return genMap(cnt);
 		pos=arr[Math.floor(Math.random()*arr.length)];
 		map[pos[0]][pos[1]]=[2,i,0];
 		for(var j=Math.max(0,pos[0]-3);j<Math.min(n,pos[0]+4);j++)
 			for(var k=Math.max(0,pos[1]-3);k<Math.min(m,pos[1]+4);k++)
 				if(map[j][k][0]==0)
 					rest[rest.length]=[j,k];
+		if(!rest.length)return genMap(cnt);
 		pos=rest[Math.floor(Math.random()*rest.length)];
 		map[pos[0]][pos[1]]=[1,-1,Math.floor(Math.random()*10)+40];
 		pos=rest[Math.floor(Math.random()*rest.length)];
@@ -65,8 +68,9 @@ function genMap(cnt){
 	}
 	for(var i=0;i<3;i++)for(var j=0;j<3;j++){
 		var rest=[],pos;
-		for(var x=i*14;x<i*14+14;x++)for(var y=j*14;y<j*14+14;y++)
+		for(var x=i*B;x<i*B+B;x++)for(var y=j*B;y<j*B+B;y++)
 			if(map[x][y][0]==0)rest[rest.length]=[x,y];
+		if(!rest.length)return genMap(cnt);
 		pos=rest[Math.floor(Math.random()*rest.length)];
 		map[pos[0]][pos[1]]=[3,-1,100];
 	}
