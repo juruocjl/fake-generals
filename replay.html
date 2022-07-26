@@ -10,6 +10,7 @@
     height: calc(100vh);
     margin: 0;">
 	<style>
+	body{user-select: none;}
 	.map{position: fixed;left:50%;top:50%;transform: translate(-50%, -50%);color:white;font-size:18px;font-weight:800;white-space: nowrap;}
 	.contain{position: fixed;left:50%;top:50%;transform:translate(-50%, -50%);text-align:center;}
 	.name{width:150px;height:30px;border:1px solid #ccc;padding:14px;border-radius:16px;font-size:20px;margin:10px;}
@@ -38,12 +39,9 @@
 	</a>
 	<div class="index">
 		<div class="contain">
-		<div id="name" class="name"></div>
+		<input id="name" class="name"></input>
 		<button id="start">Start!</button>
-		<div>当前在线：<span id="online">?</span>人</div>
 		</div>
-	</div>
-	<div class="gameend" style="display:none">
 	</div>
 	<div class="turn">turn <span id="turn">?</span></div>
 	<div class="rank">
@@ -89,60 +87,9 @@
 		$(".cell").css('width', now + 'px');
 		$(".map").css('font-size',Math.min(18,Math.floor((now+32)/4))+'px');
 	}
-	function setCookie(cname, cvalue) {
-		var d = new Date();
-		d.setTime(d.getTime() + (114514 * 24 * 60 * 60 * 1000));
-		var expires = "expires=" + d.toGMTString();
-		document.cookie = cname + "=" + cvalue + "; " + expires;
-	}
-	function getCookie(cname) {
-		var name = cname + "=";
-		var ca = document.cookie.split(';');
-		for (var i = 0; i < ca.length; i++) {
-			var c = ca[i].trim();
-			if (c.indexOf(name) == 0) {
-				return c.substring(name.length, c.length);
-			}
-		}
-		return "";
-	}
-	var user = getCookie("username");
-	while (user == "") {
-		user = prompt("请输入你的名字:", "");
-		if (user.length > 15) {
-			alert('最多只能15个字符');
-			user = "";
-		} else if (!user.match(/^[a-z]+$/gi)) {
-			alert('只能使用小写英文字母');
-			user = "";
-		} else setCookie("username", user);
-	}
-	$('#name').text(user);
-	var ws = new WebSocket("ws://"+location.hostname+":3000");
-	$('#start').click(() => {
-		ws.send(JSON.stringify({
-			'typ': 'startgame'
-		}));
-	});
-	var uid=-1;
-	const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
-	var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
-	class Deque {
-		constructor() {this.items = [];this.count = 0;this.lowestCount = 0;}
-		addBack(element) {this.items[this.count] = element;this.count++;};
-		popFront(){return this.items[this.lowestCount++];};
-		popBack() {return this.items[--this.count];};
-		size(){return this.count-this.lowestCount;}
-		clear(){this.count=this.lowestCount=0;}
-		to_string(){var a="";for(var i=this.lowestCount;i<this.count;i++){a+=this.items[i].length;for(var j=0;j<this.items[i].length;j++)a+=base[this.items[i][j]];}return a;}
-		from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
-	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
-	};
-	Q = new Deque();
 	const color=["red","blue","green","purple","brown","orange","pink"];
 	var userlist;
 	var n,m;
-	var nowx=-1,nowy=-1,op=0;
 	var map=[];
 	var vis=[];
 	function pred(Map,val){
@@ -194,16 +141,7 @@
 						else inner="<span class='umbrella num visible'></span>";
 					}
 				}
-				if(vis[i][j][0])inner+="<span class='up'></span>";
-				if(vis[i][j][1])inner+="<span class='down'></span>";
-				if(vis[i][j][2])inner+="<span class='left'></span>";
-				if(vis[i][j][3])inner+="<span class='right'></span>";
 				if(now.innerHTML!=inner)now.innerHTML=inner;
-				if(i==nowx&&j==nowy){
-					now.classList.add("nowpos");
-					if(op)console.log(now),now.firstChild.innerHTML="50%";
-				}
-				else now.classList.remove("nowpos");
 			}
 		}
 	};
@@ -219,135 +157,7 @@
 		for(var i=0;i<userlist.length;i++)
 			$('#rank >tr[data='+i+']').html('<td>'+(i+1)+'</td><td style="color:white;background:'+arr[i].color+'">'+arr[i].name+'</td><td>'+arr[i].army+'</td><td>'+arr[i].land+'</td>')
 	}
-	function setnow(a,b){
-		//console.log(nowx,nowy,op,a,b);
-		if(nowx!=-1&&nowy!=-1&&Math.abs(nowx-a)+Math.abs(nowy-b)==1){
-			var d;
-			if(a==nowx-1)d=0;
-			if(a==nowx+1)d=1;
-			if(b==nowy-1)d=2;
-			if(b==nowy+1)d=3;
-			Q.addBack([nowx,nowy,d]);
-			ws.send(JSON.stringify({'typ':'add queue','uid':uid,'data':[nowx,nowy,op*4+d]}))
-			nowx=a,nowy=b,op=0;
-		}else if(nowx==a&&nowy==b){
-			if(op==0)op=1;
-			else op=0,nowx=-1,nowy=-1;
-			console.log(op);
-		}else if(nowx>=0&&nowy>=0&&map[nowx][nowy][0]==3){
-			Q.addBack([nowx,nowy,a,b,op]);
-			ws.send(JSON.stringify({'typ':'add queue','uid':uid,'data':[nowx,nowy,a,b,op]}))
-			nowx=a,nowy=b,op=0;
-		}else nowx=a,nowy=b,op=0;
-		show();
-	}
-	document.onkeydown=function(event){
-       var e = event || window.event || arguments.callee.caller.arguments[0];
-       if(e && e.keyCode==32)nowx=nowy=-1,show();
-       if(e && e.keyCode==87)if(nowx!=-1&&nowx>0)setnow(nowx-1,nowy);
-       if(e && e.keyCode==83)if(nowx!=-1&&nowx+1<n)setnow(nowx+1,nowy);
-       if(e && e.keyCode==65)if(nowy!=-1&&nowy>0)setnow(nowx,nowy-1);
-       if(e && e.keyCode==68)if(nowy!=-1&&nowy+1<m)setnow(nowx,nowy+1);
-       if(e && e.keyCode==69){
-		    if(Q.size()){
-				lst=Q.popBack();
-				nowx=lst[0];
-				nowy=lst[1];
-				show();
-				ws.send(JSON.stringify({'typ':'pop queue','uid':uid}));
-			}
-	   }if(e && e.keyCode==81){
-		    if(Q.size()){
-				Q.clear();
-				show();
-				ws.send(JSON.stringify({'typ':'clear queue','uid':uid}));
-			}
-	   }if(e && e.keyCode==27){
-			$('.gameend').css('display','block');
-			$('.gameend').html('是否投降<br><br><button id="okok">确定</button> <button id="bxbx">取消</button>');
-			$('#okok').click(()=>{$('.gameend').css('display','none');ws.send(JSON.stringify({'typ':'surrender','uid':uid}))});
-			$('#bxbx').click(()=>{$('.gameend').css('display','none');});
-	   }
-    };
-	ws.onmessage = (evt)=>{
-		var data = JSON.parse(evt.data);
-		if (data.typ == 'already start'){
-			alert('已经开始，请关闭页面');
-			location.href=location.href;
-		}
-		if (data.typ == 'start'){
-			ws.send(JSON.stringify({
-				'typ': 'get uid',
-				'name': user
-			}));
-			$(".index").css('display','none');
-			$(".ribbons").css('display','none');
-		}
-		if (data.typ == 'uid') {
-			uid = data.uid;
-			console.log('您的uid是', uid);
-		}
-		if(data.typ=='first map'){
-			userlist = data.users;
-			n=data.n;
-			m=data.m;
-			for(var i=0;i<n;i++)
-				$('.map').append('<tr data="'+i+'" class="line"></tr>');
-			for(var j=0;j<m;j++)
-				$('.map > tr').append('<td class="cell"></td>')
-			document.querySelector(".map").style.display='table';
-			for(var i=0;i<n;i++){
-				var line = $('.map >tr[data='+i+']')
-				vis[i]=[];
-				map[i]=[];
-				for(var j=0;j<m;j++){
-					var now=line.children('td')[j];
-					(()=>{
-						var a=i,b=j;
-						now.onmousedown=(e)=>{
-							if(e.button==0&&map[a][b][0]!=-1)
-								setnow(a,b);
-						}
-					})();
-					vis[i][j]=[0,0,0,0];
-					map[i][j]=[-2];
-					if(data.firstmap[i*m+j]=="1")
-						map[i][j]=[-3];
-				}
-			}
-			for(var i=0;i<userlist.length;i++)
-				$('#rank').append('<tr data="'+i+'"></tr>')
-		}
-		if(data.typ=='new turn'){
-			ws.send(JSON.stringify({
-				'typ': 'get map',
-				'uid': uid
-			}));
-			$('#turn').text(data.turn);
-		}
-		if(data.typ=='map'){
-			pred(map,data.val);
-			console.log(data.val);
-			for(var i=0;i<data.diff.length;i++)
-				map[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
-			Q.from_string(data.queue);
-			show();
-			showrk(data.rank);
-		}
-		if(data.typ=='new connection'){
-			$('#online').text(data.cnt);
-		}
-		if(data.typ=='end'){
-			ws.close();
-			map=data.lstmap;
-			show();
-			showrk(data.lstrank);
-			$('.gameend').css('display','block');
-			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner]+'<br>回放id为 '+data.name+'<br><br><button id="okok">ok</button>');
-			else $('.gameend').html('没有胜利者捏<br>回放id为 '+data.name+'<br><br><button id="okok">ok</button>');
-			$('#okok').click(()=>{$('.gameend').css('display','none');});
-		}
-	};
+	
 	</script>
 </body>
 

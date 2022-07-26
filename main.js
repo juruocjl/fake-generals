@@ -2,13 +2,39 @@ var express = require('express')
 var app = express();
 const io = require('nodejs-websocket')
 const uuid = require('uuid');
+const fs=require('fs');
+const path=require('path');
 const gen = require('./gen.js')
+function hasFile(name){
+	console.log(name);
+	try{
+		fs.accessSync(name,fs.constants.F_OK);
+		return true;
+	}catch(err){
+		return false;
+	}
+}
 app.get('/', function (req,res) {
-   res.sendFile(__dirname+"/index.html" );
+   res.sendFile(path.join(__dirname,"index.html"));
+})
+app.get('/replay', function (req,res) {
+   res.sendFile(path.join(__dirname,"replay.html"));
 })
 app.get('/forkme_right_darkblue_121621.png', function (req,res) {
    res.sendFile(__dirname+"/forkme_right_darkblue_121621.png" );
 })
+app.get('/getfile', function (req,res) {
+	if(hasFile(path.join(__dirname,'replay',req.query.name+'.json')))
+		res.send(fs.readFileSync(path.join(__dirname,'replay',req.query.name+'.json')));
+	else res.send('Not Found');
+})
+const wyh="1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
+function randstr(len){
+	var str="";
+	for(var i=0;i<len;i++)
+		str+=wyh[Math.floor(Math.random()*wyh.length)];
+	return str;
+}
 const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {
@@ -33,12 +59,14 @@ const guanji=50;
 var turn=0;
 var rank=[];
 var lst=-1;
+var his=[];
 function pred(Map,val){
+	Map=JSON.parse(JSON.stringify(Map));
 	for(var i=0;i<n;i++)
 		for(var j=0;j<m;j++){
 			if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
-				Map[i][j][2]+=val;
-				if(Map[i][j][0]>0)Map[i][j][2]++;
+				if(Map[i][j][0]==0)Map[i][j][2]+=val;
+				else Map[i][j][2]++;
 			}
 		}
 	return Map;
@@ -76,10 +104,12 @@ var ws=io.createServer(connection=>{
 					ws.connections.forEach((connection)=>{
 						connection.send(JSON.stringify({'typ':'first map','n':n,'m':m,'firstmap':firstmap,'users':users}));
 					});
+					his[0]=map;
 					var timer=setInterval(
 						()=>{
 							++turn;
 							console.log('turn',turn);
+							var predMap=pred(map,turn%k==0);
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
 									if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
@@ -136,6 +166,10 @@ var ws=io.createServer(connection=>{
 													}
 								}
 							}
+							//console.log(map);
+							his[turn]=[];
+							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
+								his[turn][his[turn].length]=[i,j,map[i][j]];
 							for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji)
 								players[i].alive=false;
 							var nowalive=0;
@@ -146,20 +180,24 @@ var ws=io.createServer(connection=>{
 								rank[map[i][j][1]][0]+=map[i][j][2];
 							}
 							if(nowalive<=1){
+								var name=randstr(6);
+								while(hasFile(__dirname+'/replay/'+name+'.json'))name=randstr(6);
+								fs.writeFileSync(path.join(__dirname,'replay',name+'.json'),JSON.stringify({'users':users,'his':his}));
 								if(nowalive){
 									for(var winner=0;winner<players.length;winner++)if(players[winner].alive)
 										ws.connections.forEach((connection)=>{
-											connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner}));
+											connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner,'name':name}));
 										});
 								}else{
 									ws.connections.forEach((connection)=>{
-										connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':-1}));
+										connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':-1,'name':name}));
 									});
 								}
 								start=false;
 								canjoin=true;
 								players=[];
 								map=[];
+								his=[];
 								turn=0;
 								rank=[];
 								lst=-1;
@@ -196,9 +234,9 @@ var ws=io.createServer(connection=>{
 							else now=[-3];
 						}else now=JSON.parse(JSON.stringify(map[i][j]));
 						if(now.toString()!=players[id].lstmap[i][j].toString()){
+							console.log(id,i,j,now,map[i][j]);
 							players[id].lstmap[i][j]=now;
 							diff[diff.length]=[i,j,now];
-							//console.log(id,i,j,now);
 						}
 					}
 				}
