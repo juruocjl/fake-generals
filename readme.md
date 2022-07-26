@@ -14,6 +14,7 @@
 
 2.5.1 修了变量重名的bug
 
+2.6 增加了回放
 ## Supporters
 
 1. xmyrz

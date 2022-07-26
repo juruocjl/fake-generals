@@ -33,14 +33,19 @@
 	.rank{position:fixed;top:0;right:0;border: 1px solid black;z-index:20;background:white;}
 	.gameend{position:fixed;top:50%;left:50%;transform: translate(-50%, -50%);background:white;padding:20px;text-align:center;z-index:40;}
 	.ribbons{position: fixed;top: 0px;right: 0px;z-index: 50;}
+	.control{position: fixed;bottom: 0px;right:50%;z-index: 50;height:40px;transform: translate(50%, 0);background-color:white;}
+	.pre{height:100%;padding-right:10px;padding-left:10px;display:inline-block;}
+	.pre:hover{background:grey;}
+	.next{height:100%;padding-right:10px;padding-left:10px;display:inline-block;}
+	.next:hover{background:grey;}
 	</style>
 	<a href="https://github.com/juruocjl/fake-generals" target="_blank" class="ribbons">
 		<img loading="lazy" width="149" height="149" src="forkme_right_darkblue_121621.png" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
 	</a>
 	<div class="index">
 		<div class="contain">
-		<input id="name" class="name"></input>
-		<button id="start">Start!</button>
+		<input id="name" class="name"></input><br>
+		<button id="replay">回放</button>
 		</div>
 	</div>
 	<div class="turn">turn <span id="turn">?</span></div>
@@ -54,6 +59,7 @@
 		</tr>
 	</tbody></table>
 	</div>
+	<div class="control"><div class="pre">Pre</div><div class="next">Next</div></div>
 	<table cellspacing="0" cellpadding="0" border="0">
 		 <tbody class="map"  style="display:none;">
 		 </tbody>
@@ -90,8 +96,10 @@
 	const color=["red","blue","green","purple","brown","orange","pink"];
 	var userlist;
 	var n,m;
-	var map=[];
-	var vis=[];
+	var maps=[];
+	var everyadd;
+	var rank=[];
+	var turn=0;
 	function pred(Map,val){
 		Map=JSON.parse(JSON.stringify(Map));
 		for(var i=0;i<n;i++)
@@ -103,9 +111,25 @@
 			}
 		return Map;
 	}
-	function show(){
-		for(var i=0;i<n;i++)for(var j=0;j<m;j++)for(var k=0;k<4;k++)vis[i][j][k]=false;
-		Q.to_array().forEach((x)=>{if(x.length==3)vis[x[0]][x[1]][x[2]]=true;});
+	function showrk(){
+		var arr=[];
+		for(var i=0;i<userlist.length;i++)
+			arr[i]={'name':userlist[i],'color':color[i],'army':rank[i][0],'land':rank[i][1]};
+		arr.sort((a,b)=>{
+			if(a.army!=b.army)return b.army-a.army;
+			if(a.land!=b.land)return b.land-a.land;
+			return a.color<b.color?1:-1;
+		});
+		for(var i=0;i<userlist.length;i++)
+			$('#rank >tr[data='+i+']').html('<td>'+(i+1)+'</td><td style="color:white;background:'+arr[i].color+'">'+arr[i].name+'</td><td>'+arr[i].army+'</td><td>'+arr[i].land+'</td>')
+	}
+	function show(map){
+		for(var i=0;i<userlist.length;i++)rank[i]=[0,0];
+		for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]>=0&&map[i][j][1]>=0){
+			rank[map[i][j][1]][1]++;
+			rank[map[i][j][1]][0]+=map[i][j][2];
+		}
+		showrk();
 		for(var i=0;i<n;i++){
 			var line = $('.map >tr[data='+i+']')
 			for(var j=0;j<m;j++){
@@ -146,19 +170,59 @@
 			}
 		}
 	};
-	function showrk(rank){
-		var arr=[];
-		for(var i=0;i<userlist.length;i++)
-			arr[i]={'name':userlist[i],'color':color[i],'army':rank[i][0],'land':rank[i][1]};
-		arr.sort((a,b)=>{
-			if(a.army!=b.army)return b.army-a.army;
-			if(a.land!=b.land)return b.land-a.land;
-			return a.color<b.color?1:-1;
-		});
-		for(var i=0;i<userlist.length;i++)
-			$('#rank >tr[data='+i+']').html('<td>'+(i+1)+'</td><td style="color:white;background:'+arr[i].color+'">'+arr[i].name+'</td><td>'+arr[i].army+'</td><td>'+arr[i].land+'</td>')
+	function getQueryVariable(variable)
+	{
+       var query = window.location.search.substring(1);
+       var vars = query.split("&");
+       for (var i=0;i<vars.length;i++) {
+               var pair = vars[i].split("=");
+               if(pair[0] == variable){return pair[1];}
+       }
+       return(false);
 	}
-	
+	if(getQueryVariable('name'))$('#name').val(getQueryVariable('name'));
+	$('#replay').click(()=>{
+		var xmlHttp = new XMLHttpRequest();
+		xmlHttp.open("GET", 'getfile?name='+$('#name').val(), false );
+		xmlHttp.send();
+		if(xmlHttp.responseText=="Not Found")alert('Not Found');
+		else{
+			var data=JSON.parse(xmlHttp.responseText);
+			console.log(data);
+			$('.index').css('display','none');
+			$('.ribbons').css('display','none');
+			n=data.his[0].length;
+			m=data.his[0][0].length;
+			userlist=data.users;
+			var cnt=data.his.length;
+			maps[0]=data.his[0];
+			everyadd=data.everyadd;
+			for(var i=1;i<data.his.length;i++){
+				maps[i]=pred(maps[i-1],i%everyadd==0);
+				data.his[i].forEach((x)=>{maps[i][x[0]][x[1]]=x[2];});
+			}
+			for(var i=0;i<n;i++)
+				$('.map').append('<tr data="'+i+'" class="line"></tr>');
+			for(var j=0;j<m;j++)
+				$('.map > tr').append('<td class="cell"></td>')
+			document.querySelector(".map").style.display='table';
+			for(var i=0;i<n;i++){
+				var line = $('.map >tr[data='+i+']')
+				for(var j=0;j<m;j++)
+					var now=line.children('td')[j];
+			}
+			for(var i=0;i<userlist.length;i++)
+				$('#rank').append('<tr data="'+i+'"></tr>')
+			show(maps[0]);
+			$('.pre').click(()=>{
+				if(turn>0)turn--,show(maps[turn]);
+			});
+			$('.next').click(()=>{
+				if(turn+1<maps.length)turn++,show(maps[turn]);
+				else alert('end');
+			})
+		}
+    });
 	</script>
 </body>
 

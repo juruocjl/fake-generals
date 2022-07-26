@@ -343,8 +343,8 @@
 			show();
 			showrk(data.lstrank);
 			$('.gameend').css('display','block');
-			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner]+'<br>回放id为 '+data.name+'<br><br><button id="okok">ok</button>');
-			else $('.gameend').html('没有胜利者捏<br>回放id为 '+data.name+'<br><br><button id="okok">ok</button>');
+			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner]+'<br>回放id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
+			else $('.gameend').html('没有胜利者捏<br>回放id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
 			$('#okok').click(()=>{$('.gameend').css('display','none');});
 		}
 	};

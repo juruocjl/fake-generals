@@ -104,7 +104,7 @@ var ws=io.createServer(connection=>{
 					ws.connections.forEach((connection)=>{
 						connection.send(JSON.stringify({'typ':'first map','n':n,'m':m,'firstmap':firstmap,'users':users}));
 					});
-					his[0]=map;
+					his[0]=JSON.parse(JSON.stringify(map));
 					var timer=setInterval(
 						()=>{
 							++turn;
@@ -168,7 +168,8 @@ var ws=io.createServer(connection=>{
 							}
 							his[turn]=[];
 							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
-								his[turn][his[turn].length]=[i,j,map[i][j]];
+								his[turn][his[turn].length]=[i,j,JSON.parse(JSON.stringify(map[i][j]))];
+							//console.log(his[turn]);
 							for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji)
 								players[i].alive=false;
 							var nowalive=0;
@@ -181,7 +182,7 @@ var ws=io.createServer(connection=>{
 							if(nowalive<=1){
 								var name=randstr(6);
 								while(hasFile(__dirname+'/replay/'+name+'.json'))name=randstr(6);
-								fs.writeFileSync(path.join(__dirname,'replay',name+'.json'),JSON.stringify({'users':users,'his':his}));
+								fs.writeFileSync(path.join(__dirname,'replay',name+'.json'),JSON.stringify({'users':users,'everyadd':everyadd,'his':his}));
 								if(nowalive){
 									for(var winner=0;winner<players.length;winner++)if(players[winner].alive)
 										ws.connections.forEach((connection)=>{
@@ -233,7 +234,7 @@ var ws=io.createServer(connection=>{
 							else now=[-3];
 						}else now=JSON.parse(JSON.stringify(map[i][j]));
 						if(now.toString()!=players[id].lstmap[i][j].toString()){
-							console.log(id,i,j,now,map[i][j]);
+							//console.log(id,i,j,now,map[i][j]);
 							players[id].lstmap[i][j]=now;
 							diff[diff.length]=[i,j,now];
 						}
