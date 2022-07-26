@@ -215,10 +215,10 @@
 				$('#rank').append('<tr data="'+i+'"></tr>')
 			show(maps[0]);
 			$('.pre').click(()=>{
-				if(turn>0)turn--,show(maps[turn]);
+				if(turn>0)turn--,show(maps[turn]),$('#turn').text(turn);
 			});
 			$('.next').click(()=>{
-				if(turn+1<maps.length)turn++,show(maps[turn]);
+				if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(turn);
 				else alert('end');
 			})
 		}
