@@ -1,5 +1,7 @@
 # fake generals.io
 
+[说明](rules.md)
+
 ## CHANGELOG
 
 2.2 增加了兵种 “伞兵”
