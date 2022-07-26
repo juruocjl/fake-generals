@@ -29,6 +29,7 @@ var map=[];
 var n,m;
 const k=25;
 const eachturn=600;
+const guanji=50;
 var turn=0;
 var rank=[];
 var lst=-1;
@@ -135,7 +136,8 @@ var ws=io.createServer(connection=>{
 													}
 								}
 							}
-							//console.log(map);
+							for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji)
+								players[i].alive=false;
 							var nowalive=0;
 							for(var i=0;i<players.length;i++)
 								rank[i]=[0,0],nowalive+=players[i].alive;
@@ -143,11 +145,17 @@ var ws=io.createServer(connection=>{
 								rank[map[i][j][1]][1]++;
 								rank[map[i][j][1]][0]+=map[i][j][2];
 							}
-							if(nowalive==1){
-								for(var winner=0;winner<players.length;winner++)if(players[winner].alive)
+							if(nowalive<=1){
+								if(nowalive){
+									for(var winner=0;winner<players.length;winner++)if(players[winner].alive)
+										ws.connections.forEach((connection)=>{
+											connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner}));
+										});
+								}else{
 									ws.connections.forEach((connection)=>{
-										connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner}));
-								});
+										connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':-1}));
+									});
+								}
 								start=false;
 								canjoin=true;
 								players=[];
@@ -168,7 +176,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='get uid'){
 			if(canjoin){
 				var id=uuid.v1();
-				players[players.length]={"name":data.name,"uid":id,'queue':new Deque(),'alive':true,'lstmap':[]};
+				players[players.length]={"name":data.name,"uid":id,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
 				connection.send(JSON.stringify({'typ':'uid','uid':id}));
 			}
 		}
@@ -200,16 +208,19 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='add queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
 				players[id].queue.addBack(data.data);
+				players[id].lstvis=turn;
 			}
 		}
 		if(data.typ=='pop queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
 				if(players[id].queue.size())players[id].queue.popBack();
+				players[id].lstvis=turn;
 			}
 		}
 		if(data.typ=='clear queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
 				if(players[id].queue.size())players[id].queue.clear();
+				players[id].lstvis=turn;
 			}
 		}
 		if(data.typ=="surrender"){

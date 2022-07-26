@@ -344,7 +344,8 @@
 			show();
 			showrk(data.lstrank);
 			$('.gameend').css('display','block');
-			$('.gameend').html('最后的胜利者是 '+userlist[data.winner]+'<br><br><button id="okok">ok</button>');
+			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner]+'<br><br><button id="okok">ok</button>');
+			else $('.gameend').html('没有胜利者捏<br><br><button id="okok">ok</button>');
 			$('#okok').click(()=>{$('.gameend').css('display','none');});
 		}
 	};
