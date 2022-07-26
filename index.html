@@ -263,6 +263,11 @@
 				show();
 				ws.send(JSON.stringify({'typ':'clear queue','uid':uid}));
 			}
+	   }if(e && e.keyCode==27){
+			$('.gameend').css('display','block');
+			$('.gameend').html('是否投降<br><br><button id="okok">确定</button> <button id="bxbx">取消</button>');
+			$('#okok').click(()=>{$('.gameend').css('display','none');ws.send(JSON.stringify({'typ':'surrender','uid':uid}))});
+			$('#bxbx').click(()=>{$('.gameend').css('display','none');});
 	   }
     };
 	ws.onmessage = (evt)=>{

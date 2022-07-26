@@ -92,7 +92,7 @@ var ws=io.createServer(connection=>{
 											map[i][j][2]++;
 							const ddx=[-1,1,0,0];
 							const ddy=[0,0,-1,1];
-							for(var i=0;i<players.length;i++){
+							for(var i=0;i<players.length;i++)if(players[i].alive){
 								while(players[i].queue.size()){
 									var now=players[i].queue.popFront();
 										var xx,yy;
@@ -210,6 +210,11 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='clear queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
 				if(players[id].queue.size())players[id].queue.clear();
+			}
+		}
+		if(data.typ=="surrender"){
+			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+				players[id].alive=false;
 			}
 		}
 	})
