@@ -93,11 +93,12 @@
 	var map=[];
 	var vis=[];
 	function pred(Map,val){
+		Map=JSON.parse(JSON.stringify(Map));
 		for(var i=0;i<n;i++)
 			for(var j=0;j<m;j++){
 				if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
-					Map[i][j][2]+=val;
-					if(Map[i][j][0]>0)Map[i][j][2]++;
+					if(Map[i][j][0]==0)Map[i][j][2]+=val;
+					else Map[i][j][2]++;
 				}
 			}
 		return Map;

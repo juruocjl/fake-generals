@@ -10,6 +10,7 @@
     height: calc(100vh);
     margin: 0;">
 	<style>
+	body{user-select: none;}
 	.map{position: fixed;left:50%;top:50%;transform: translate(-50%, -50%);color:white;font-size:18px;font-weight:800;white-space: nowrap;}
 	.contain{position: fixed;left:50%;top:50%;transform:translate(-50%, -50%);text-align:center;}
 	.name{width:150px;height:30px;border:1px solid #ccc;padding:14px;border-radius:16px;font-size:20px;margin:10px;}
@@ -149,11 +150,10 @@
 		for(var i=0;i<n;i++)
 			for(var j=0;j<m;j++){
 				if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
-					Map[i][j][2]+=val;
-					if(Map[i][j][0]>0)Map[i][j][2]++;
+					if(Map[i][j][0]==0)Map[i][j][2]+=val;
+					else Map[i][j][2]++;
 				}
 			}
-		return Map;
 	}
 	function show(){
 		for(var i=0;i<n;i++)for(var j=0;j<m;j++)for(var k=0;k<4;k++)vis[i][j][k]=false;

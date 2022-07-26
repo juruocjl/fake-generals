@@ -53,7 +53,7 @@ var canjoin=true;
 var players=[];
 var map=[];
 var n,m;
-const k=25;
+const everyadd=25;
 const eachturn=600;
 const guanji=50;
 var turn=0;
@@ -109,14 +109,14 @@ var ws=io.createServer(connection=>{
 						()=>{
 							++turn;
 							console.log('turn',turn);
-							var predMap=pred(map,turn%k==0);
+							var predMap=pred(map,turn%everyadd==0);
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
 									if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
 										map[i][j][2]++;
 									else if(map[i][j][0]==2)
 										map[i][j][2]++;
-							if(turn%k==0)
+							if(turn%everyadd==0)
 								for(var i=0;i<n;i++)
 									for(var j=0;j<m;j++)
 										if(map[i][j][0]==0&&map[i][j][1]>=0)
@@ -166,7 +166,6 @@ var ws=io.createServer(connection=>{
 													}
 								}
 							}
-							//console.log(map);
 							his[turn]=[];
 							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
 								his[turn][his[turn].length]=[i,j,map[i][j]];
@@ -221,7 +220,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='get map'){
 			//console.log(players,data);
 			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
-				players[id].lstmap=pred(players[id].lstmap,turn%k==0);
+				players[id].lstmap=pred(players[id].lstmap,turn%everyadd==0);
 				var diff=[];
 				for(var i=0;i<n;i++){
 					for(var j=0;j<m;j++){
@@ -240,7 +239,7 @@ var ws=io.createServer(connection=>{
 						}
 					}
 				}
-				connection.send(JSON.stringify({'typ':'map','val':turn%k==0,'diff':diff,'queue':players[id].queue.to_string(),'rank':rank}));
+				connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'diff':diff,'queue':players[id].queue.to_string(),'rank':rank}));
 			}
 		}
 		if(data.typ=='add queue'){
@@ -268,15 +267,15 @@ var ws=io.createServer(connection=>{
 		}
 	})
 	connection.on("close", function (code, reason) {
-        console.log("Connection closed");
-        if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
-    })
+		console.log("Connection closed");
+		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
+	})
 	connection.on("error",() => {
 		console.log('服务异常关闭...');
-        if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
+		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start'}))
-    else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
+	else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 });
 ws.listen(3000)
 var server = app.listen(8081)
