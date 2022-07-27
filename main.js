@@ -1,32 +1,138 @@
 var express = require('express')
+var session = require("express-session");
+const bp = require('body-parser');
+const cookieParser=require('cookie-parser')
 var app = express();
 const io = require('nodejs-websocket');
 const uuid = require('uuid');
 const fs=require('fs');
 const path=require('path');
+var md5 = require('md5-node');
 function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_OK);return true;}catch(err){return false;}}
 try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
 const gen = require('./gen.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
+app.use(cookieParser())
+app.use(bp.urlencoded({extended:false}));
+app.use(session({
+    secret: config.dbpswd,
+    resave: false,
+    saveUninitialized: true
+}))
 const mysql = require('mysql');
-var db = mysql.createConnection({
-  host:config.dbhost,port:config.dbport,user:config.dbuser,
-  password:config.dbpswd,database:config.dbname});
-db.connect();
+function fail(title,text){
+	return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';
+}
 app.get('/', function (req,res) {
-   res.sendFile(path.join(__dirname,"index.html"));
+	console.log(req.session.userid,req.session.pswd)
+	if(req.session.userid&&req.session.pswd){
+		var db = mysql.createConnection({
+		  host:config.dbhost,port:config.dbport,user:config.dbuser,
+		  password:config.dbpswd,database:config.dbname});
+		db.connect();
+		var sql = 'SELECT * FROM users WHERE id='+req.session.userid;
+		db.query(sql,(err,result)=>{
+			if(err){
+				res.send(fail('查询失败',err.message));
+				return;
+			}else if(result[0].pswd!=req.session.pswd){
+				req.session.userid=req.session.pswd=null;
+				res.redirect('/');
+			}else{
+				res.cookie('userid',result[0].id,{maxAge:114514*24*60*60*1000});
+				res.cookie('username',result[0].name,{maxAge:114514*24*60*60*1000});
+				res.cookie('pswd',md5(result[0].pswd),{maxAge:114514*24*60*60*1000})
+				res.sendFile(path.join(__dirname,"index.html"));
+			}
+		});
+		db.end();
+	}else{
+		res.sendFile(path.join(__dirname,"login.html"));
+	}
 })
 app.get('/replay', function (req,res) {
    res.sendFile(path.join(__dirname,"replay.html"));
 })
 app.get('/forkme_right_darkblue_121621.png', function (req,res) {
-   res.sendFile(__dirname+"/forkme_right_darkblue_121621.png" );
+   res.sendFile(path.join(__dirname,"/forkme_right_darkblue_121621.png"));
 })
 app.get('/getfile', function (req,res) {
 	if(hasFile(path.join(__dirname,'replay',req.query.name+'.json')))
 		res.send(fs.readFileSync(path.join(__dirname,'replay',req.query.name+'.json')));
 	else res.send('Not Found');
+})
+app.post('/submit',function(req,res){
+    console.log(req.body);
+    if(req.body.type=="login"){
+		var db = mysql.createConnection({
+		  host:config.dbhost,port:config.dbport,user:config.dbuser,
+		  password:config.dbpswd,database:config.dbname});
+		db.connect();
+		var sql = 'SELECT * FROM users WHERE name="'+req.body.name+'"';
+		db.query(sql,(err,result)=>{
+			if(err){
+				res.send(fail('查询失败',err.message));
+				return;
+			}else{
+				console.log(result);
+				if(result.length==0){
+					res.send(fail('用户未找到','用户未找到'));
+				}else if(req.body.pswd!=result[0].pswd){
+					res.send(fail('密码错误','密码错误'));
+				}else{
+					req.session.userid=result[0].id;
+					req.session.pswd=result[0].pswd;
+					res.redirect('/')
+				}
+			}
+		});
+		db.end();
+	}else{
+		if(!req.body.name.match(/^[a-z0-9]+$/gi)){
+			res.send(fail('注册失败','只能使用小写字母和数字'));
+		}else if(req.body.name.length>20){
+			res.send(fail('注册失败','名字最多为20个字符'));
+		}else if(req.body.pswd.length>25){
+			res.send(fail('注册失败','密码最多为25个字符'));
+		}else{
+			var db = mysql.createConnection({
+			  host:config.dbhost,port:config.dbport,user:config.dbuser,
+			  password:config.dbpswd,database:config.dbname});
+			db.connect();
+			var sql = 'SELECT * FROM users WHERE name="'+req.body.name+'"';
+			db.query(sql,(err,result)=>{
+				if(err){
+					res.send(fail('查询失败',err.message));
+					return;
+				}else{
+					console.log(result);
+					if(result.length==0){
+						var db = mysql.createConnection({
+						  host:config.dbhost,port:config.dbport,user:config.dbuser,
+						  password:config.dbpswd,database:config.dbname});
+						db.connect();
+						var sql = 'INSERT INTO `users`(`name`, `pswd`) VALUES (?,?)';
+						db.query(sql,[req.body.name,req.body.pswd],(err,result)=>{
+							if(err){
+								res.send(fail('注册失败',err.message));
+								return;
+							}else{
+								console.log(result);
+								req.session.userid=result.insertId;
+								req.session.pswd=req.body.pswd;
+								res.redirect('/')
+							}
+						});
+						db.end();
+					}else{
+						res.send(fail('注册失败','用户名已被注册'));
+					}
+				}
+			});
+			db.end();
+		}
+	}
 })
 const wyh="1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
 function randstr(len){
@@ -71,8 +177,34 @@ function pred(Map,val){
 		}
 	return Map;
 }
+function getCookie(cookie,cname) {
+	var name = cname + "=";
+	var ca = cookie.split(';');
+	for (var i = 0; i < ca.length; i++) {
+		var c = ca[i].trim();
+		if (c.indexOf(name) == 0)
+			return c.substring(name.length, c.length);
+	}
+	return "";
+}
 var ws=io.createServer(connection=>{
-	console.log('new connection...')
+	console.log('new connection...');
+	var db = mysql.createConnection({
+		host:config.dbhost,port:config.dbport,user:config.dbuser,
+	password:config.dbpswd,database:config.dbname});
+	db.connect();
+	var userid=getCookie(connection.headers.cookie,"userid");
+	var username=getCookie(connection.headers.cookie,"username");
+	var pswd=getCookie(connection.headers.cookie,"pswd");
+	var sql = 'SELECT * FROM users WHERE id='+userid;
+	db.query(sql,(err,result)=>{
+		if(err){
+			console.error(err);
+			return;
+		}else if(result.length==0||md5(result[0].pswd)!=pswd)
+			ws.close();
+	});
+	db.end();
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
 		console.log(data);
@@ -83,6 +215,7 @@ var ws=io.createServer(connection=>{
 					connection.send(JSON.stringify({'typ':'start'}));
 				});
 				setTimeout(()=>{
+					console.log(players);
 					canjoin=false;
 					var res=gen.genMap(players.length);
 					n=res.n;
@@ -102,7 +235,7 @@ var ws=io.createServer(connection=>{
 						if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)firstmap+="0";
 						else firstmap+="1";
 					ws.connections.forEach((connection)=>{
-						connection.send(JSON.stringify({'typ':'first map','n':n,'m':m,'firstmap':firstmap,'users':users}));
+						connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
 					});
 					his[0]=JSON.parse(JSON.stringify(map));
 					var timer=setInterval(
@@ -204,23 +337,21 @@ var ws=io.createServer(connection=>{
 								clearInterval(timer);
 							}else{
 								ws.connections.forEach((connection)=>{
-									connection.send(JSON.stringify({'typ':'new turn','turn':turn}));
+									connection.send(JSON.stringify({'typ':'new turn','turn':turn,'rank':rank}));
 								});
 							}
 						},eachturn);
 				},1000)
 			}
 		}
-		if(data.typ=='get uid'){
+		if(data.typ=='join game'){
 			if(canjoin){
-				var id=uuid.v1();
-				players[players.length]={"name":data.name,"uid":id,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
-				connection.send(JSON.stringify({'typ':'uid','uid':id}));
+				players[players.length]={"name":data.name,"uid":userid,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
 			}
 		}
 		if(data.typ=='get map'){
 			//console.log(players,data);
-			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				players[id].lstmap=pred(players[id].lstmap,turn%everyadd==0);
 				var diff=[];
 				for(var i=0;i<n;i++){
@@ -240,29 +371,29 @@ var ws=io.createServer(connection=>{
 						}
 					}
 				}
-				connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'diff':diff,'queue':players[id].queue.to_string(),'rank':rank}));
+				connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'diff':diff,'queue':players[id].queue.to_string()}));
 			}
 		}
 		if(data.typ=='add queue'){
-			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				players[id].queue.addBack(data.data);
 				players[id].lstvis=turn;
 			}
 		}
 		if(data.typ=='pop queue'){
-			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				if(players[id].queue.size())players[id].queue.popBack();
 				players[id].lstvis=turn;
 			}
 		}
 		if(data.typ=='clear queue'){
-			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				if(players[id].queue.size())players[id].queue.clear();
 				players[id].lstvis=turn;
 			}
 		}
 		if(data.typ=="surrender"){
-			for(var id=0;id<players.length;id++)if(players[id].uid==data.uid){
+			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				players[id].alive=false;
 			}
 		}

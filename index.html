@@ -113,7 +113,7 @@
 		if (user.length > 15) {
 			alert('最多只能15个字符');
 			user = "";
-		} else if (!user.match(/^[a-z]+$/gi)) {
+		} else if (!user.match(/^[a-zA-Z0-9]+$/gi)) {
 			alert('只能使用小写英文字母');
 			user = "";
 		} else setCookie("username", user);
@@ -125,7 +125,6 @@
 			'typ': 'startgame'
 		}));
 	});
-	var uid=-1;
 	const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 	var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 	class Deque {
@@ -137,7 +136,7 @@
 		clear(){this.count=this.lowestCount=0;}
 		to_string(){var a="";for(var i=this.lowestCount;i<this.count;i++){a+=this.items[i].length;for(var j=0;j<this.items[i].length;j++)a+=base[this.items[i][j]];}return a;}
 		from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
-	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
+		to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 	};
 	Q = new Deque();
 	const color=["red","blue","green","purple","brown","orange","pink"];
@@ -146,6 +145,7 @@
 	var nowx=-1,nowy=-1,op=0;
 	var map=[];
 	var vis=[];
+	var notinit=true;
 	function pred(Map,val){
 		for(var i=0;i<n;i++)
 			for(var j=0;j<m;j++){
@@ -220,7 +220,6 @@
 			$('#rank >tr[data='+i+']').html('<td>'+(i+1)+'</td><td style="color:white;background:'+arr[i].color+'">'+arr[i].name+'</td><td>'+arr[i].army+'</td><td>'+arr[i].land+'</td>')
 	}
 	function setnow(a,b){
-		//console.log(nowx,nowy,op,a,b);
 		if(nowx!=-1&&nowy!=-1&&Math.abs(nowx-a)+Math.abs(nowy-b)==1){
 			var d;
 			if(a==nowx-1)d=0;
@@ -228,7 +227,7 @@
 			if(b==nowy-1)d=2;
 			if(b==nowy+1)d=3;
 			Q.addBack([nowx,nowy,d]);
-			ws.send(JSON.stringify({'typ':'add queue','uid':uid,'data':[nowx,nowy,op*4+d]}))
+			ws.send(JSON.stringify({'typ':'add queue','data':[nowx,nowy,op*4+d]}))
 			nowx=a,nowy=b,op=0;
 		}else if(nowx==a&&nowy==b){
 			if(op==0)op=1;
@@ -236,7 +235,7 @@
 			console.log(op);
 		}else if(nowx>=0&&nowy>=0&&map[nowx][nowy][0]==3){
 			Q.addBack([nowx,nowy,a,b,op]);
-			ws.send(JSON.stringify({'typ':'add queue','uid':uid,'data':[nowx,nowy,a,b,op]}))
+			ws.send(JSON.stringify({'typ':'add queue','data':[nowx,nowy,a,b,op]}))
 			nowx=a,nowy=b,op=0;
 		}else nowx=a,nowy=b,op=0;
 		show();
@@ -254,43 +253,39 @@
 				nowx=lst[0];
 				nowy=lst[1];
 				show();
-				ws.send(JSON.stringify({'typ':'pop queue','uid':uid}));
+				ws.send(JSON.stringify({'typ':'pop queue'}));
 			}
 	   }if(e && e.keyCode==81){
 		    if(Q.size()){
 				Q.clear();
 				show();
-				ws.send(JSON.stringify({'typ':'clear queue','uid':uid}));
+				ws.send(JSON.stringify({'typ':'clear queue'}));
 			}
 	   }if(e && e.keyCode==27){
 			$('.gameend').css('display','block');
 			$('.gameend').html('是否投降<br><br><button id="okok">确定</button> <button id="bxbx">取消</button>');
-			$('#okok').click(()=>{$('.gameend').css('display','none');ws.send(JSON.stringify({'typ':'surrender','uid':uid}))});
+			$('#okok').click(()=>{$('.gameend').css('display','none');ws.send(JSON.stringify({'typ':'surrender'}))});
 			$('#bxbx').click(()=>{$('.gameend').css('display','none');});
 	   }
     };
 	ws.onmessage = (evt)=>{
 		var data = JSON.parse(evt.data);
 		if (data.typ == 'already start'){
-			alert('已经开始，请关闭页面');
-			location.href=location.href;
+			
 		}
 		if (data.typ == 'start'){
 			ws.send(JSON.stringify({
-				'typ': 'get uid',
+				'typ': 'join game',
 				'name': user
 			}));
 			$(".index").css('display','none');
 			$(".ribbons").css('display','none');
 		}
-		if (data.typ == 'uid') {
-			uid = data.uid;
-			console.log('您的uid是', uid);
-		}
-		if(data.typ=='first map'){
+		if(data.typ=='init game'){
 			userlist = data.users;
 			n=data.n;
 			m=data.m;
+			notinit=false;
 			for(var i=0;i<n;i++)
 				$('.map').append('<tr data="'+i+'" class="line"></tr>');
 			for(var j=0;j<m;j++)
@@ -319,11 +314,9 @@
 				$('#rank').append('<tr data="'+i+'"></tr>')
 		}
 		if(data.typ=='new turn'){
-			ws.send(JSON.stringify({
-				'typ': 'get map',
-				'uid': uid
-			}));
+			ws.send(JSON.stringify({'typ': 'get map'}));
 			$('#turn').text(data.turn);
+			showrk(data.rank);
 		}
 		if(data.typ=='map'){
 			pred(map,data.val);
@@ -332,7 +325,6 @@
 				map[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
 			Q.from_string(data.queue);
 			show();
-			showrk(data.rank);
 		}
 		if(data.typ=='new connection'){
 			$('#online').text(data.cnt);

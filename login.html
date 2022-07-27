@@ -1,0 +1,21 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<title>注册 或 登录</title>
+	<meta charset="utf-8">
+</head>
+<body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;">
+	<div style="text-align: center;">
+	<h1>注册 或 登录</h1>
+	<form action="/submit" method="POST">
+		用户名:&emsp;<input type="text" name="name">
+		<br>
+		密&emsp;码:&emsp;<input type="password" name="pswd"><br>
+		<input type="radio" name="type" value="login" checked>登录
+		<input type="radio" name="type" value="register">注册
+		<br><br>
+		<input type="submit">
+	</form>
+	</div> 
+</body>
+</html>
