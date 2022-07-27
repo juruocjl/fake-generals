@@ -108,16 +108,6 @@
 		return "";
 	}
 	var user = getCookie("username");
-	while (user == "") {
-		user = prompt("请输入你的名字:", "");
-		if (user.length > 15) {
-			alert('最多只能15个字符');
-			user = "";
-		} else if (!user.match(/^[a-zA-Z0-9]+$/gi)) {
-			alert('只能使用小写英文字母');
-			user = "";
-		} else setCookie("username", user);
-	}
 	$('#name').text(user);
 	var ws = new WebSocket("ws://"+location.hostname+":3000");
 	$('#start').click(() => {
