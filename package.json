@@ -1,5 +1,5 @@
 {
-  "name": "juanlaoshi",
+  "name": "fake-generals",
   "version": "1.0.0",
   "description": "fake generals",
   "main": "main.js",
@@ -7,6 +7,7 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.1",
+    "mysql": "^2.18.1",
     "nodejs-websocket": "^1.7.2",
     "uuid": "^8.3.2"
   }

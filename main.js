@@ -1,19 +1,19 @@
 var express = require('express')
 var app = express();
-const io = require('nodejs-websocket')
+const io = require('nodejs-websocket');
 const uuid = require('uuid');
 const fs=require('fs');
 const path=require('path');
-const gen = require('./gen.js')
-function hasFile(name){
-	console.log(name);
-	try{
-		fs.accessSync(name,fs.constants.F_OK);
-		return true;
-	}catch(err){
-		return false;
-	}
-}
+function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_OK);return true;}catch(err){return false;}}
+try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
+const gen = require('./gen.js');
+if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
+const config = require('./config.js');
+const mysql = require('mysql');
+var db = mysql.createConnection({
+  host:config.dbhost,port:config.dbport,user:config.dbuser,
+  password:config.dbpswd,database:config.dbname});
+db.connect();
 app.get('/', function (req,res) {
    res.sendFile(path.join(__dirname,"index.html"));
 })
@@ -53,9 +53,9 @@ var canjoin=true;
 var players=[];
 var map=[];
 var n,m;
-const everyadd=25;
-const eachturn=600;
-const guanji=50;
+const everyadd=config.everyadd;
+const eachturn=config.eachturn;
+const guanji=config.guaji;
 var turn=0;
 var rank=[];
 var lst=-1;
