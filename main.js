@@ -7,7 +7,7 @@ const path=require('path');
 function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_OK);return true;}catch(err){return false;}}
 try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
 const gen = require('./gen.js');
-if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
+if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
 const mysql = require('mysql');
 var db = mysql.createConnection({
@@ -279,4 +279,4 @@ var ws=io.createServer(connection=>{
 	else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 });
 ws.listen(3000)
-var server = app.listen(8081)
+var server = app.listen(config.port)
