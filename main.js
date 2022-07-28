@@ -36,7 +36,7 @@ app.get('/', function (req,res) {
 			if(err){
 				res.send(fail('查询失败',err.message));
 				return;
-			}else if(resultresult[0].pswd!=req.session.pswd){
+			}else if(result.length==0||result[0].pswd!=req.session.pswd){
 				req.session.userid=req.session.pswd=null;
 				res.redirect('/');
 			}else{
