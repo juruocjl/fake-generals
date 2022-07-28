@@ -221,6 +221,14 @@
 				if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(turn);
 				else alert('end');
 			})
+			document.onkeydown=function(event){
+			   var e = event || window.event || arguments.callee.caller.arguments[0];
+			   if(e && e.keyCode==65)if(turn>0)turn--,show(maps[turn]),$('#turn').text(turn);
+			   if(e && e.keyCode==68){
+				  if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(turn);
+				  else alert('end');
+			   }
+		   };
 		}
     });
 	</script>
