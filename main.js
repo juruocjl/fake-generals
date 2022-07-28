@@ -65,6 +65,10 @@ app.get('/getfile', function (req,res) {
 		res.send(fs.readFileSync(path.join(__dirname,'replay',req.query.name+'.json')));
 	else res.send('Not Found');
 })
+app.get('/logout', function (req,res) {
+	req.session.userid=req.session.pswd=null;
+	res.redirect('/');
+})
 app.get('/donationrk', function (req,res){
 	var db = mysql.createConnection({
 		  host:config.dbhost,port:config.dbport,user:config.dbuser,
