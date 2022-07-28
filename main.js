@@ -21,11 +21,10 @@ app.use(session({
     saveUninitialized: true
 }))
 const mysql = require('mysql');
-function fail(title,text){
-	return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';
-}
+function fail(title,text){return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';}
+function calcvip(donate){if(donate>25)return 3;if(donate>10)return 2;if(donate>0)return 1;return 0;}
 app.get('/', function (req,res) {
-	console.log(req.session.userid,req.session.pswd)
+	//console.log(req.session.userid,req.session.pswd)
 	if(req.session.userid&&req.session.pswd){
 		var db = mysql.createConnection({
 		  host:config.dbhost,port:config.dbport,user:config.dbuser,
@@ -43,6 +42,7 @@ app.get('/', function (req,res) {
 				res.cookie('userid',result[0].id,{maxAge:114514*24*60*60*1000});
 				res.cookie('username',result[0].name,{maxAge:114514*24*60*60*1000});
 				res.cookie('pswd',result[0].pswd,{maxAge:114514*24*60*60*1000})
+				res.cookie('vip',calcvip(result[0].donation),{maxAge:114514*24*60*60*1000});
 				res.sendFile(path.join(__dirname,"index.html"));
 			}
 		});
@@ -56,6 +56,9 @@ app.get('/replay', function (req,res) {
 })
 app.get('/forkme_right_darkblue_121621.png', function (req,res) {
    res.sendFile(path.join(__dirname,"/forkme_right_darkblue_121621.png"));
+})
+app.get('/main.css', function (req,res) {
+   res.sendFile(path.join(__dirname,"main.css"));
 })
 app.get('/getfile', function (req,res) {
 	if(hasFile(path.join(__dirname,'replay',req.query.name+'.json')))
@@ -74,9 +77,9 @@ app.get('/donationrk', function (req,res){
 			return;
 		}else{
 			//console.log(result);
-			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><body><h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
+			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
 			for(var i=0;i<result.length;i++)
-				html+='<tr><td>'+(i+1)+'</td><td>'+result[i].name+'</td></tr>';
+				html+='<tr><td>'+(i+1)+'</td><td>'+result[i].name+' <i class="vip'+calcvip(result[i].donation)+'"></i></td></tr>';
 			html+='</tbody></table></body></html>';
 			res.send(html);
 		}
@@ -84,7 +87,7 @@ app.get('/donationrk', function (req,res){
 	db.end();
 });
 app.post('/submit',function(req,res){
-    console.log(req.body);
+    //console.log(req.body);
     if(req.body.type=="login"){
 		var db = mysql.createConnection({
 		  host:config.dbhost,port:config.dbport,user:config.dbuser,
@@ -222,14 +225,19 @@ var ws=io.createServer(connection=>{
 	var userid=getCookie(connection.headers.cookie,"userid");
 	var username=getCookie(connection.headers.cookie,"username");
 	var pswd=getCookie(connection.headers.cookie,"pswd");
+	var vip=0;
+	//console.log(userid,username,pswd);
 	var sql = 'SELECT * FROM users WHERE id='+userid;
 	db.query(sql,(err,result)=>{
 		if(err){
 			console.error(err);
 			return;
-		}else if(result.length==0||result[0].pswd!=pswd){
-			console.log('pswd err');
-			ws.close();
+		}else if(result.length==0||result[0].pswd!=pswd||result[0].name!=username){
+			console.log('pswd or username err');
+			connection.close();
+		}else{
+			vip=calcvip(result[0].donation)
+			console.log(username,vip);
 		}
 	});
 	db.end();
@@ -249,7 +257,8 @@ var ws=io.createServer(connection=>{
 					n=res.n;
 					m=res.m;
 					map=res.map;
-					players.forEach((x)=>{users[users.length]=x.name});
+					players.forEach((x)=>{users[users.length]={'name':x.name,'vip':x.vip}});
+					console.log(users);
 					var firstmap="";
 					for(var i=0;i<players.length;i++)
 						for(var j=0;j<n;j++){
@@ -374,7 +383,8 @@ var ws=io.createServer(connection=>{
 		}
 		if(data.typ=='join game'){
 			if(canjoin){
-				players[players.length]={"name":data.name,"uid":userid,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
+				//console.log(username,userid,vip);
+				players[players.length]={"name":username,"uid":userid,'vip':vip,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
 			}
 		}
 		if(data.typ=='get map'){
