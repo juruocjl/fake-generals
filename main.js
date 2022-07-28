@@ -62,6 +62,27 @@ app.get('/getfile', function (req,res) {
 		res.send(fs.readFileSync(path.join(__dirname,'replay',req.query.name+'.json')));
 	else res.send('Not Found');
 })
+app.get('/donationrk', function (req,res){
+	var db = mysql.createConnection({
+		  host:config.dbhost,port:config.dbport,user:config.dbuser,
+		  password:config.dbpswd,database:config.dbname});
+	db.connect();
+	var sql='SELECT * from users WHERE donation>0 ORDER BY donation DESC LIMIT 20';
+	db.query(sql,(err,result)=>{
+		if(err){
+			res.send(fail('查询失败',err.message));
+			return;
+		}else{
+			//console.log(result);
+			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><body><h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
+			for(var i=0;i<result.length;i++)
+				html+='<tr><td>'+(i+1)+'</td><td>'+result[i].name+'</td></tr>';
+			html+='</tbody></table></body></html>';
+			res.send(html);
+		}
+	});
+	db.end();
+});
 app.post('/submit',function(req,res){
     console.log(req.body);
     if(req.body.type=="login"){
@@ -75,7 +96,7 @@ app.post('/submit',function(req,res){
 				res.send(fail('查询失败',err.message));
 				return;
 			}else{
-				console.log(result);
+				//console.log(result);
 				if(result.length==0){
 					res.send(fail('用户未找到','用户未找到'));
 				}else if(md5(req.body.pswd)!=result[0].pswd){
@@ -110,7 +131,7 @@ app.post('/submit',function(req,res){
 					res.send(fail('查询失败',err.message));
 					return;
 				}else{
-					console.log(result);
+					//console.log(result);
 					if(result.length==0){
 						var db = mysql.createConnection({
 						  host:config.dbhost,port:config.dbport,user:config.dbuser,

@@ -33,6 +33,11 @@
 	.rank{position:fixed;top:0;right:0;border: 1px solid black;z-index:20;background:white;}
 	.gameend{position:fixed;top:50%;left:50%;transform: translate(-50%, -50%);background:white;padding:20px;text-align:center;z-index:40;}
 	.ribbons{position: fixed;top: 0px;right: 0px;z-index: 50;}
+	.toolcontain{position: fixed;right:0px;bottom:0px;}
+	.outer{height: 40px;width: 40px;background: #eee;padding: 10px;border-radius: 50%;border: 1px black solid;}
+	.outer:hover{background: #aaa;}
+	.ranking{height:100%;width:100%;background:url("data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDQ4IDQ4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xNyAxOEg0VjQySDE3VjE4WiIgc3Ryb2tlPSIjMzMzIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik0zMCA2SDE3VjQySDMwVjZaIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjxwYXRoIGQ9Ik00MyAyNkgzMFY0Mkg0M1YyNloiIHN0cm9rZT0iIzMzMyIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=");background-size:cover;}
+	.notice{height:50%;width:50%;border:1px black solid;position:fixed;top:50%;left:50%;transform: translate(-50%, -50%);background:white;padding:20px;text-align:center;z-index:40;display:none;}
 	</style>
 	<a href="https://github.com/juruocjl/fake-generals" target="_blank" class="ribbons">
 		<img loading="lazy" width="149" height="149" src="forkme_right_darkblue_121621.png" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
@@ -57,11 +62,25 @@
 		</tr>
 	</tbody></table>
 	</div>
+	<div class="toolcontain">
+		<div class="outer" id="showrank">
+			<div class="ranking"></div>
+		</div>
+	</div>
+	<div class="notice">
+		
+	</div>
 	<table cellspacing="0" cellpadding="0" border="0">
 		 <tbody class="map"  style="display:none;">
 		 </tbody>
 	</table>
 	<script>
+	$('#showrank').click(()=>{
+		if($('.notice').css('display')=='none'){
+			$('.notice').css('display','block');
+			$('.notice').html('<iframe src="donationrk" style="width:100%;height:100%;"></iframe>')
+		}else $('.notice').css('display','none');
+	});
     document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 	var drag = document.querySelector(".map");
 	drag.onmousedown = function(e1) {
@@ -110,11 +129,7 @@
 	var user = getCookie("username");
 	$('#name').text(user);
 	var ws = new WebSocket("ws://"+location.hostname+":3000");
-	$('#start').click(() => {
-		ws.send(JSON.stringify({
-			'typ': 'startgame'
-		}));
-	});
+	$('#start').click(() => {ws.send(JSON.stringify({'typ': 'startgame'}));});
 	const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 	var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 	class Deque {
