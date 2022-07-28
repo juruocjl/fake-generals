@@ -36,7 +36,7 @@ app.get('/', function (req,res) {
 			if(err){
 				res.send(fail('查询失败',err.message));
 				return;
-			}else if(result[0].pswd!=req.session.pswd){
+			}else if(resultresult[0].pswd!=req.session.pswd){
 				req.session.userid=req.session.pswd=null;
 				res.redirect('/');
 			}else{
@@ -95,6 +95,10 @@ app.post('/submit',function(req,res){
 			res.send(fail('注册失败','名字最多为20个字符'));
 		}else if(req.body.pswd.length>25){
 			res.send(fail('注册失败','密码最多为25个字符'));
+		}else if(req.body.name.length<6){
+			res.send(fail('注册失败','名字至少为6个字符'));
+		}else if(req.body.pswd.length<8){
+			res.send(fail('注册失败','密码至少为8个字符'));
 		}else{
 			var db = mysql.createConnection({
 			  host:config.dbhost,port:config.dbport,user:config.dbuser,
