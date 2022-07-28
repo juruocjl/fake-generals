@@ -261,7 +261,35 @@
 	ws.onmessage = (evt)=>{
 		var data = JSON.parse(evt.data);
 		if (data.typ == 'already start'){
-			
+			userlist = data.users;
+			n=data.n;
+			m=data.m;
+			for(var i=0;i<n;i++)
+				$('.map').append('<tr data="'+i+'" class="line"></tr>');
+			for(var j=0;j<m;j++)
+				$('.map > tr').append('<td class="cell"></td>')
+			document.querySelector(".map").style.display='table';
+			for(var i=0;i<n;i++){
+				var line = $('.map >tr[data='+i+']')
+				vis[i]=[];
+				map[i]=[];
+				for(var j=0;j<m;j++){
+					var now=line.children('td')[j];
+					(()=>{
+						var a=i,b=j;
+						now.onmousedown=(e)=>{
+							if(e.button==0&&map[a][b][0]!=-1)
+								setnow(a,b);
+						}
+					})();
+					vis[i][j]=[0,0,0,0];
+					map[i][j]=[-2];
+				}
+			}
+			for(var i=0;i<userlist.length;i++)
+				$('#rank').append('<tr data="'+i+'"></tr>')
+			$(".index").css('display','none');
+			$(".ribbons").css('display','none');
 		}
 		if (data.typ == 'start'){
 			ws.send(JSON.stringify({
@@ -304,15 +332,17 @@
 				$('#rank').append('<tr data="'+i+'"></tr>')
 		}
 		if(data.typ=='new turn'){
-			ws.send(JSON.stringify({'typ': 'get map'}));
+			if(notinit)ws.send(JSON.stringify({'typ': 'get map','full':true}));
+			else ws.send(JSON.stringify({'typ': 'get map','full':false}));
 			$('#turn').text(data.turn);
 			showrk(data.rank);
 		}
 		if(data.typ=='map'){
-			pred(map,data.val);
-			console.log(data.val);
-			for(var i=0;i<data.diff.length;i++)
-				map[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
+			if(!data.full){
+				pred(map,data.val);
+				for(var i=0;i<data.diff.length;i++)
+					map[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
+			}else map=data.map,notinit=false;
 			Q.from_string(data.queue);
 			show();
 		}

@@ -42,7 +42,7 @@ app.get('/', function (req,res) {
 			}else{
 				res.cookie('userid',result[0].id,{maxAge:114514*24*60*60*1000});
 				res.cookie('username',result[0].name,{maxAge:114514*24*60*60*1000});
-				res.cookie('pswd',md5(result[0].pswd),{maxAge:114514*24*60*60*1000})
+				res.cookie('pswd',result[0].pswd,{maxAge:114514*24*60*60*1000})
 				res.sendFile(path.join(__dirname,"index.html"));
 			}
 		});
@@ -78,7 +78,7 @@ app.post('/submit',function(req,res){
 				console.log(result);
 				if(result.length==0){
 					res.send(fail('用户未找到','用户未找到'));
-				}else if(req.body.pswd!=result[0].pswd){
+				}else if(md5(req.body.pswd)!=result[0].pswd){
 					res.send(fail('密码错误','密码错误'));
 				}else{
 					req.session.userid=result[0].id;
@@ -113,14 +113,14 @@ app.post('/submit',function(req,res){
 						  password:config.dbpswd,database:config.dbname});
 						db.connect();
 						var sql = 'INSERT INTO `users`(`name`, `pswd`) VALUES (?,?)';
-						db.query(sql,[req.body.name,req.body.pswd],(err,result)=>{
+						db.query(sql,[req.body.name,md5(req.body.pswd)],(err,result)=>{
 							if(err){
 								res.send(fail('注册失败',err.message));
 								return;
 							}else{
 								console.log(result);
 								req.session.userid=result.insertId;
-								req.session.pswd=req.body.pswd;
+								req.session.pswd=md5(req.body.pswd);
 								res.redirect('/')
 							}
 						});
@@ -158,6 +158,7 @@ var start=false;
 var canjoin=true;
 var players=[];
 var map=[];
+var users=[];
 var n,m;
 const everyadd=config.everyadd;
 const eachturn=config.eachturn;
@@ -201,8 +202,10 @@ var ws=io.createServer(connection=>{
 		if(err){
 			console.error(err);
 			return;
-		}else if(result.length==0||md5(result[0].pswd)!=pswd)
+		}else if(result.length==0||result[0].pswd!=pswd){
+			console.log('pswd err');
 			ws.close();
+		}
 	});
 	db.end();
 	connection.on("text",(data)=>{
@@ -221,7 +224,6 @@ var ws=io.createServer(connection=>{
 					n=res.n;
 					m=res.m;
 					map=res.map;
-					var users=[];
 					players.forEach((x)=>{users[users.length]=x.name});
 					var firstmap="";
 					for(var i=0;i<players.length;i++)
@@ -333,6 +335,7 @@ var ws=io.createServer(connection=>{
 								his=[];
 								turn=0;
 								rank=[];
+								users=[];
 								lst=-1;
 								clearInterval(timer);
 							}else{
@@ -371,8 +374,13 @@ var ws=io.createServer(connection=>{
 						}
 					}
 				}
-				connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'diff':diff,'queue':players[id].queue.to_string()}));
+				if(data.full)
+					connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()}))
+				else
+					connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'full':false,'diff':diff,'queue':players[id].queue.to_string()}));
+				return;
 			}
+			connection.send(JSON.stringify({'typ':'map','val':false,'full':false,'diff':[],'queue':""}));
 		}
 		if(data.typ=='add queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
@@ -406,7 +414,7 @@ var ws=io.createServer(connection=>{
 		console.log('服务异常关闭...');
 		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 	})
-	if(start)connection.send(JSON.stringify({'typ':'already start'}))
+	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
 	else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 });
 ws.listen(3000)

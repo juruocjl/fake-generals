@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` char(30) NOT NULL,
-  `pswd` char(30) NOT NULL,
+  `pswd` char(32) NOT NULL,
   `rating` int(11) NOT NULL DEFAULT '1500',
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_2` (`id`),
