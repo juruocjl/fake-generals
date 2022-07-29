@@ -83,10 +83,20 @@ app.get('/getfile', function (req,res) {
 	});
 	db.end();
 })
-app.get('/logout', function (req,res) {
+app.get('/askfgaksgfkhsgkf', function (req,res) {
 	req.session.userid=req.session.pswd=null;
 	res.redirect('/');
 })
+function showname(name,rating){
+	if(rating<1200)return '<span class="newbiw">'+name+'</span>';
+	if(rating<1400)return '<span class="pupil">'+name+'</span>';
+	if(rating<1600)return '<span class="specialist">'+name+'</span>';
+	if(rating<1900)return '<span class="expert">'+name+'</span>';
+	if(rating<2100)return '<span class="candidate-master">'+name+'</span>';
+	if(rating<2400)return '<span class="master">'+name+'</span>';
+	if(rating<3000)return '<span class="grandmaster">'+name+'</span>';
+	return '<span class="legendary-grandmaster">'+name+'</span>';
+}
 app.get('/donationrk', function (req,res){
 	var db = mysql.createConnection({
 		  host:config.dbhost,port:config.dbport,user:config.dbuser,
@@ -101,7 +111,28 @@ app.get('/donationrk', function (req,res){
 			//console.log(result);
 			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
 			for(var i=0;i<result.length;i++)
-				html+='<tr><td>'+(i+1)+'</td><td>'+result[i].name+' <i class="vip'+calcvip(result[i].donation)+'"></i></td></tr>';
+				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td></tr>';
+			html+='</tbody></table></body></html>';
+			res.send(html);
+		}
+	});
+	db.end();
+});
+app.get('/ratingrk', function (req,res){
+	var db = mysql.createConnection({
+		  host:config.dbhost,port:config.dbport,user:config.dbuser,
+		  password:config.dbpswd,database:config.dbname});
+	db.connect();
+	var sql='SELECT * from users ORDER BY rating DESC LIMIT 20';
+	db.query(sql,(err,result)=>{
+		if(err){
+			res.send(fail('查询失败',err.message));
+			return;
+		}else{
+			//console.log(result);
+			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>分数</th></tr>';
+			for(var i=0;i<result.length;i++)
+				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td><td>'+result[i].rating+'</td></tr>';
 			html+='</tbody></table></body></html>';
 			res.send(html);
 		}
@@ -187,16 +218,6 @@ app.post('/submit',function(req,res){
 		}
 	}
 })
-function showname(name,rating){
-	if(rating<1200)return '<span class="newbiw">'+name+'</span>';
-	if(rating<1400)return '<span class="pupil">'+name+'</span>';
-	if(rating<1600)return '<span class="specialist">'+name+'</span>';
-	if(rating<1900)return '<span class="expert">'+name+'</span>';
-	if(rating<2100)return '<span class="candidate-master">'+name+'</span>';
-	if(rating<2400)return '<span class="master">'+name+'</span>';
-	if(rating<3000)return '<span class="grandmaster">'+name+'</span>';
-	return '<span class="legendary-grandmaster">'+name+'</span>';
-}
 app.get('/qry',function(req,res){
 	var db = mysql.createConnection({
 		  host:config.dbhost,port:config.dbport,user:config.dbuser,
