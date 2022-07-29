@@ -1,6 +1,7 @@
 const B=14;
-const n=3*B,m=3*B;
 function checkMap(map){
+	var n=map.length;
+	var m=map[0].length;
 	var players=[],vis=[];
 	for(var i=0;i<n;i++)for(var j=0;j<m;j++)
 		if(map[i][j][0]==2)players[players.length]=[i,j];
@@ -32,6 +33,8 @@ function checkMap(map){
 	return true;
 }
 function genMap(cnt){
+	var C=Math.ceil(Math.sqrt(cnt));
+	var n=C*B,m=C*B;
 	var map=[];
 	for(var i=0;i<n;i++){
 		var line=[];
@@ -44,13 +47,13 @@ function genMap(cnt){
 		map[i]=line;
 	}
 	var rangelist=[];
-	for(var i=0;i<3;i++)for(var j=0;j<3;j++)
+	for(var i=0;i<C;i++)for(var j=0;j<C;j++)
 		rangelist[rangelist.length]=[i*B,i*B+B,j*B,j*B+B];
 	rangelist.sort(()=>{return Math.random()-0.5});
 	for(var i=0;i<cnt;i++){
 		var arr=[],pos,rest=[];
-		for(var j=rangelist[i%9][0];j<rangelist[i%9][1];j++)
-			for(var k=rangelist[i%9][2];k<rangelist[i%9][3];k++)
+		for(var j=rangelist[i][0];j<rangelist[i][1];j++)
+			for(var k=rangelist[i][2];k<rangelist[i][3];k++)
 				if(map[j][k][0]==0)
 					arr[arr.length]=[j,k];
 		if(!arr.length)return genMap(cnt);
@@ -66,7 +69,7 @@ function genMap(cnt){
 		pos=rest[Math.floor(Math.random()*rest.length)];
 		map[pos[0]][pos[1]]=[1,-1,Math.floor(Math.random()*10)+40];
 	}
-	for(var i=0;i<3;i++)for(var j=0;j<3;j++){
+	for(var i=0;i<C;i++)for(var j=0;j<C;j++){
 		var rest=[],pos;
 		for(var x=i*B;x<i*B+B;x++)for(var y=j*B;y<j*B+B;y++)
 			if(map[x][y][0]==0)rest[rest.length]=[x,y];

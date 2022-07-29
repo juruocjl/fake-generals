@@ -16,6 +16,7 @@
 	<div class="index">
 		<div class="contain">
 		<div id="name" class="name"></div>
+		<div>当前rating为<span id="rating"></span></div><br>
 		<button id="start">Start!</button>
 		<div>当前在线：<span id="online">?</span>人</div>
 		</div>
@@ -34,6 +35,9 @@
 	</tbody></table>
 	</div>
 	<div class="toolcontain">
+		<div class="outer" id="showsearch">
+			<div class="search"></div>
+		</div><br>
 		<div class="outer" id="showinfo">
 			<div class="infos"></div>
 		</div><br>
@@ -64,7 +68,23 @@
 			nowwin="info";
 		}else $('.notice').css('display','none'),nowwin="none";
 	});
-	
+	$('#showsearch').click(()=>{
+		if(nowwin!="search"){
+			$('.notice').css('display','block');
+			$('.notice').html('<iframe src="qry?name=0" style="width:100%;height:100%;"></iframe>')
+			nowwin="search";
+		}else $('.notice').css('display','none'),nowwin="none";
+	});
+	function showname(name,rating){
+		if(rating<1200)return '<span class="newbiw">'+name+'</span>';
+		if(rating<1400)return '<span class="pupil">'+name+'</span>';
+		if(rating<1600)return '<span class="specialist">'+name+'</span>';
+		if(rating<1900)return '<span class="expert">'+name+'</span>';
+		if(rating<2100)return '<span class="candidate-master">'+name+'</span>';
+		if(rating<2400)return '<span class="master">'+name+'</span>';
+		if(rating<3000)return '<span class="grandmaster">'+name+'</span>';
+		return '<span class="legendary-grandmaster">'+name+'</span>';
+	}
     document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 	var drag = document.querySelector(".map");
 	drag.onmousedown = function(e1) {
@@ -112,7 +132,9 @@
 	}
 	var user = decodeURIComponent(getCookie("username"));
 	var vip = getCookie("vip");
-	$('#name').html(user+'<i class="vip'+vip+'"></i>');
+	var rating = getCookie("rating");
+	$('#name').html(showname(user,rating)+'<i class="vip'+vip+'"></i>');
+	$('#rating').html(showname(rating,rating));
 	var ws = new WebSocket("ws://"+location.hostname+":3000");
 	$('#start').click(() => {ws.send(JSON.stringify({'typ': 'startgame'}));});
 	const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
@@ -201,9 +223,9 @@
 		var arr=[];
 		for(var i=0;i<userlist.length;i++)
 			if(userlist[i].vip==0)
-				arr[i]={'name':userlist[i].name,'color':color[i],'army':rank[i][0],'land':rank[i][1]};
+				arr[i]={'name':showname(userlist[i].name,userlist[i].rating),'color':color[i],'army':rank[i][0],'land':rank[i][1]};
 			else
-				arr[i]={'name':userlist[i].name+'<i class="vip'+userlist[i].vip+'"></i>','color':color[i],'army':rank[i][0],'land':rank[i][1]};
+				arr[i]={'name':showname(userlist[i].name,userlist[i].rating)+'<i class="vip'+userlist[i].vip+'"></i>','color':color[i],'army':rank[i][0],'land':rank[i][1]};
 		arr.sort((a,b)=>{
 			if(a.army!=b.army)return b.army-a.army;
 			if(a.land!=b.land)return b.land-a.land;
@@ -362,8 +384,8 @@
 			show();
 			showrk(data.lstrank);
 			$('.gameend').css('display','block');
-			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner].name+'<br>回放id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
-			else $('.gameend').html('没有胜利者捏<br>回放id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
+			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner].name+'<br>比赛id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
+			else $('.gameend').html('没有胜利者捏<br>比赛id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
 			$('#okok').click(()=>{$('.gameend').css('display','none');});
 		}
 	};

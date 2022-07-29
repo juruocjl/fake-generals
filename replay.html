@@ -36,6 +36,16 @@
 		 </tbody>
 	</table>
 	<script>
+	function showname(name,rating){
+		if(rating<1200)return '<span class="newbiw">'+name+'</span>';
+		if(rating<1400)return '<span class="pupil">'+name+'</span>';
+		if(rating<1600)return '<span class="specialist">'+name+'</span>';
+		if(rating<1900)return '<span class="expert">'+name+'</span>';
+		if(rating<2100)return '<span class="candidate-master">'+name+'</span>';
+		if(rating<2400)return '<span class="master">'+name+'</span>';
+		if(rating<3000)return '<span class="grandmaster">'+name+'</span>';
+		return '<span class="legendary-grandmaster">'+name+'</span>';
+	}
     document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 	var drag = document.querySelector(".map");
 	drag.onmousedown = function(e1) {
@@ -86,9 +96,9 @@
 		var arr=[];
 		for(var i=0;i<userlist.length;i++)
 			if(userlist[i].vip==0)
-				arr[i]={'name':userlist[i].name,'color':color[i],'army':rank[i][0],'land':rank[i][1]};
+				arr[i]={'name':showname(userlist[i].name,userlist[i].rating),'color':color[i],'army':rank[i][0],'land':rank[i][1]};
 			else
-				arr[i]={'name':userlist[i].name+'<i class="vip'+userlist[i].vip+'"></i>','color':color[i],'army':rank[i][0],'land':rank[i][1]};
+				arr[i]={'name':showname(userlist[i].name,userlist[i].rating)+'<i class="vip'+userlist[i].vip+'"></i>','color':color[i],'army':rank[i][0],'land':rank[i][1]};
 		arr.sort((a,b)=>{
 			if(a.army!=b.army)return b.army-a.army;
 			if(a.land!=b.land)return b.land-a.land;
