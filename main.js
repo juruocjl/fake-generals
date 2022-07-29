@@ -76,7 +76,7 @@ app.get('/getfile', function (req,res) {
 			if(result.length==1){
 				var everyadd=JSON.parse(result[0].everyadd);
 				var users=JSON.parse(result[0].users);
-				var his=JSON.parse(result[0].his);
+				var his=JSON.parse(fs.readFileSync(path.join(__dirname,req.query.name+'.json')));
 				res.send(JSON.stringify({'everyadd':everyadd,'users':users,'his':his}));
 			}else res.send('Not Found');
 		}
@@ -450,7 +450,7 @@ var ws=io.createServer(connection=>{
 								for(var i=0;i<players.length;i++)
 									players[i].pos=i,
 									players[dieturn[i]].rk=players.length-i,
-									players[dieturn[i]].score+=1500*((i+1)/players.length)**3;
+									players[dieturn[i]].score+=1500*((i+1)/players.length)**1.5;
 								players.sort((A,B)=>{
 									if(A.score!=B.score)return B.score-A.score;
 									return A.rk-B.rk;
@@ -513,14 +513,15 @@ var ws=io.createServer(connection=>{
 									  host:config.dbhost,port:config.dbport,user:config.dbuser,
 									  password:config.dbpswd,database:config.dbname});
 								db.connect();
-								var sql = 'INSERT INTO `games` (`everyadd`, `his`, `users`) VALUES (?, ?, ?)';
-								db.query(sql,[everyadd,JSON.stringify(his),JSON.stringify(users)],(err,result)=>{
+								var sql = 'INSERT INTO `games` (`everyadd`,  `users`) VALUES (?, ?)';
+								db.query(sql,[everyadd,JSON.stringify(users)],(err,result)=>{
 									if(err){
 										console.error(err);
 									}else{
 										ws.connections.forEach((connection)=>{
 											connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner,'name':result.insertId}));
 										});
+										fs.writeFileSync(path.join(__dirname,result.insertId+'.json'),JSON.stringify(his))
 										start=false;
 										canjoin=true;
 										players=[];
