@@ -34,6 +34,9 @@
 	</tbody></table>
 	</div>
 	<div class="toolcontain">
+		<div class="outer" id="showinfo">
+			<div class="infos"></div>
+		</div><br>
 		<div class="outer" id="showrank">
 			<div class="ranking"></div>
 		</div>
@@ -46,12 +49,22 @@
 		 </tbody>
 	</table>
 	<script>
+	var nowwin="none";
 	$('#showrank').click(()=>{
-		if($('.notice').css('display')=='none'){
+		if(nowwin!="rank"){
 			$('.notice').css('display','block');
 			$('.notice').html('<iframe src="donationrk" style="width:100%;height:100%;"></iframe>')
-		}else $('.notice').css('display','none');
+			nowwin="rank";
+		}else $('.notice').css('display','none'),nowwin="none";
 	});
+	$('#showinfo').click(()=>{
+		if(nowwin!="info"){
+			$('.notice').css('display','block');
+			$('.notice').html('<iframe src="infos" style="width:100%;height:100%;"></iframe>')
+			nowwin="info";
+		}else $('.notice').css('display','none'),nowwin="none";
+	});
+	
     document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 	var drag = document.querySelector(".map");
 	drag.onmousedown = function(e1) {

@@ -4,9 +4,9 @@ const bp = require('body-parser');
 const cookieParser=require('cookie-parser')
 var app = express();
 const io = require('nodejs-websocket');
-const uuid = require('uuid');
 const fs=require('fs');
 const path=require('path');
+const md=require('markdown-it')();
 var md5 = require('md5-node');
 function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_OK);return true;}catch(err){return false;}}
 try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
@@ -23,6 +23,7 @@ app.use(session({
 const mysql = require('mysql');
 function fail(title,text){return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';}
 function calcvip(donate){if(donate>25)return 3;if(donate>10)return 2;if(donate>0)return 1;return 0;}
+var infos=md.render('# 操作说明\n'+fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
 app.get('/', function (req,res) {
 	//console.log(req.session.userid,req.session.pswd)
 	if(req.session.userid&&req.session.pswd){
@@ -90,6 +91,9 @@ app.get('/donationrk', function (req,res){
 	});
 	db.end();
 });
+app.get('/infos',function(req,res){
+	res.send(infos);
+})
 app.post('/submit',function(req,res){
     //console.log(req.body);
     if(req.body.type=="login"){
