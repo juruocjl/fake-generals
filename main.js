@@ -227,7 +227,7 @@ var ws=io.createServer(connection=>{
 	password:config.dbpswd,database:config.dbname});
 	db.connect();
 	var userid=getCookie(connection.headers.cookie,"userid");
-	var username=getCookie(connection.headers.cookie,"username");
+	var username=decodeURIComponent(getCookie(connection.headers.cookie,"username"));
 	var pswd=getCookie(connection.headers.cookie,"pswd");
 	var vip=0;
 	//console.log(userid,username,pswd);
@@ -255,7 +255,7 @@ var ws=io.createServer(connection=>{
 					connection.send(JSON.stringify({'typ':'start'}));
 				});
 				setTimeout(()=>{
-					console.log(players);
+					//console.log(players);
 					canjoin=false;
 					var res=gen.genMap(players.length);
 					n=res.n;

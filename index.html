@@ -97,7 +97,7 @@
 		}
 		return "";
 	}
-	var user = getCookie("username");
+	var user = decodeURIComponent(getCookie("username"));
 	var vip = getCookie("vip");
 	$('#name').html(user+'<i class="vip'+vip+'"></i>');
 	var ws = new WebSocket("ws://"+location.hostname+":3000");
