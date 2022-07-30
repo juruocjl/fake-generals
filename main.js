@@ -225,16 +225,16 @@ app.get('/qry',function(req,res){
 	db.connect();
 	var sql='SELECT users from games WHERE id='+req.query.name;
 	db.query(sql,(err,result)=>{
-		var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating变化查询</h1><input id="name"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button><br>';
+		var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating变化查询</h1><input id="name" value="'+req.query.name+'"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button> <a href="replay?name='+req.query.name+'">回放</a><br>';
 		if(err)html+="查询失败 "+err;
 		else if(result.length){
-			html+='<table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>得分</th><th>变化</th></tr>';
+			html+='<table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>△</th><th>变化</th></tr>';
 			var users=JSON.parse(result[0].users);
 			users.sort((A,B)=>{return A.rk-B.rk;});
 			//console.log(users);
 			for(var i=0;i<users.length;i++){
 				var O=parseInt(users[i].rating),N=O+parseInt(users[i].delta);
-				html+='<tr><td>'+(i+1)+'</td><td>'+users[i].name+' <i class="vip'+users[i].vip+'"></i></td><td>'+users[i].score+'</td><td>'
+				html+='<tr><td>'+(i+1)+'</td><td>'+users[i].name+' <i class="vip'+users[i].vip+'"></i></td><td>'+users[i].delta+'</td><td>'
 				+showname(O,O)+' → '+showname(N,N)+'</td></tr>';
 			}
 			html+='</tbody></table>';
@@ -327,7 +327,7 @@ var ws=io.createServer(connection=>{
 	db.end();
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
-		console.log(data);
+		//console.log(data);
 		if(data.typ=='startgame'){
 			if(!start){
 				start=true;
@@ -398,6 +398,7 @@ var ws=io.createServer(connection=>{
 														}else{
 															if(val>map[xx][yy][2]){
 																if(map[xx][yy][0]==2){
+																	map[xx][yy][2]=val-map[xx][yy][2];
 																	var dead=map[xx][yy][1];
 																	players[dead].alive=false;
 																	dieturn[dieturn.length]=dead;
@@ -405,7 +406,8 @@ var ws=io.createServer(connection=>{
 																		map[x][y][1]=i;
 																	map[xx][yy][0]=1;
 																	players[i].kill++;
-																	players[i].score+=200;
+																	players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
+																	players[i].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 																}else if(map[xx][yy][0]!=3){
 																	map[xx][yy][2]=val-map[xx][yy][2];
 																	map[xx][yy][1]=i;
@@ -429,7 +431,7 @@ var ws=io.createServer(connection=>{
 							for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji){
 								players[i].alive=false,
 								players[i].guaji=true,
-								players[i].score-=500;
+								players[i].Delta-=200;
 								dieturn[dieturn.length]=i;
 							}
 							var nowalive=0;
@@ -441,52 +443,25 @@ var ws=io.createServer(connection=>{
 							}
 							if(nowalive<=1){
 								var winner=-1;
-								var kk=Math.min(0.5,Math.sqrt((players.length-1)/18));
+								var kk=Math.min(1,(players.length-1)/4);
 								if(nowalive){
 									for(winner=0;winner<players.length;winner++)if(players[winner].alive){
 										dieturn[dieturn.length]=winner;break;
 									}
 								}
 								for(var i=0;i<players.length;i++)
-									players[i].pos=i,
-									players[dieturn[i]].rk=players.length-i,
-									players[dieturn[i]].score+=1500*((i+1)/players.length)**1.5;
-								players.sort((A,B)=>{
-									if(A.score!=B.score)return B.score-A.score;
-									return A.rk-B.rk;
-								});
-								function P(A,B){
-									//Rating为A高于Rating为B的概率
-									return 1/(1+Math.pow(10,(B-A)/400));
-								}
-								function seed(i,A){
-									//用户i分数为A的期望排名
-									var res=0;
-									for(var j=0;j<players.length;j++)if(i!=j)
-										res+=P(players[j].rating,A);
-									return res+1;
-								}
-								var inc=-1;
-								for(var i=0;i<players.length;i++){
-									players[i].scorerk=i+1;
-									var M=Math.sqrt(i+1,seed(i,players[i].rating));
-									var L=100,R=4000,res=100;
-									while(L<=R){
-										var Mid=Math.floor((L+R)/2);
-										if(seed(i,Mid)>=M)res=Mid,L=Mid+1;
-										else R=Mid-1;
-									}
-									players[i].Delta=(res-players[i].rating)/2;
-									inc-=players[i].Delta;
-								}
-								inc/=players.length;
+									players[dieturn[i]].rk=players.length-i;
+								if(players.length>1)
+									for(var i=0;i<players.length;i++)
+										players[i].Delta+=200-300*(players[i].rk-1)/(players.length-1);
+								console.log(players);
 								for(var i=0;i<players.length;i++){
 									var db = mysql.createConnection({
 									  host:config.dbhost,port:config.dbport,user:config.dbuser,
 									  password:config.dbpswd,database:config.dbname});
 									db.connect();
 									players[i].Delta=Math.floor((players[i].Delta)*kk);
-									var sql = 'UPDATE users SET rating = rating + '+players[i].Delta+' WHERE id="'+players[i].uid+'"';
+									var sql = 'UPDATE users SET rating = '+Math.max(1000,players[i].rating+players[i].Delta)+' WHERE id="'+players[i].uid+'"';
 									db.query(sql,(err,result)=>{
 										if(err){
 											console.error(err);
@@ -495,20 +470,16 @@ var ws=io.createServer(connection=>{
 									db.end();
 								}
 								users=[];
-								players.forEach((player)=>{
-									users[player.pos]={
-										'uid':player.uid,
-										'name':player.name,
-										'vip':player.vip,
-										'rk':player.rk,
-										'rating':player.rating,
-										'delta':player.Delta,
-										'guaji':player.guaji,
-										'kill':player.kill,
-										'score':player.score,
-										'scorerk':player.scorerk
+								for(var i=0;i<players.length;i++)
+									users[i]={
+										'uid':players[i].uid,
+										'name':players[i].name,
+										'vip':players[i].vip,
+										'rk':players[i].rk,
+										'rating':players[i].rating,
+										'delta':players[i].Delta,
+										'guaji':players[i].guaji
 									}
-								});
 								var db = mysql.createConnection({
 									  host:config.dbhost,port:config.dbport,user:config.dbuser,
 									  password:config.dbpswd,database:config.dbname});
@@ -550,7 +521,7 @@ var ws=io.createServer(connection=>{
 				//console.log(username,userid,vip,rating);
 				for(var i=0;i<players.length;i++)if(players[i].uid==userid)
 					{connection.close();return;}
-				players[players.length]={"name":username,"uid":userid,'vip':vip,'rating':rating,'score':0,'kill':0,'guaji':true,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
+				players[players.length]={"name":username,"uid":userid,'vip':vip,'rating':parseInt(rating),'Delta':0,'guaji':false,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
 			}
 		}
 		if(data.typ=='get map'){

@@ -223,7 +223,7 @@
 				if(now.innerHTML!=inner)now.innerHTML=inner;
 				if(i==nowx&&j==nowy){
 					now.classList.add("nowpos");
-					if(op)console.log(now),now.firstChild.innerHTML="50%";
+					if(op)now.firstChild.innerHTML="50%";
 				}
 				else now.classList.remove("nowpos");
 			}
@@ -286,6 +286,15 @@
 				show();
 				ws.send(JSON.stringify({'typ':'clear queue'}));
 			}
+	   }if(e && e.keyCode==88){
+			var ums=[];
+			for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]==3)
+				ums[ums.length]=[i,j];
+			ums.sort((a,b)=>{return map[b[0]][b[1]][2]-map[a[0]][a[1]][2];});
+			var tmpx=nowx,tmpy=nowy;
+			for(var i=0;i<ums.length;i++)
+				nowx=ums[i][0],nowy=ums[i][1],
+				setnow(tmpx,tmpy);
 	   }if(e && e.keyCode==27){
 			$('.gameend').css('display','block');
 			$('.gameend').html('是否投降<br><br><button id="okok">确定</button> <button id="bxbx">取消</button>');
@@ -394,8 +403,7 @@
 			show();
 			showrk(data.lstrank);
 			$('.gameend').css('display','block');
-			if(data.winner>=0)$('.gameend').html('最后的胜利者是 '+userlist[data.winner].name+'<br>比赛id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
-			else $('.gameend').html('没有胜利者捏<br>比赛id为 <a href="replay?name='+data.name+'">'+data.name+'</a><br><br><button id="okok">ok</button>');
+			$('.gameend').html('<iframe src="qry?name='+data.name+'" style="height:400px;"></iframe><button id="okok">ok</button>');
 			$('#okok').click(()=>{$('.gameend').css('display','none');});
 		}
 	};
