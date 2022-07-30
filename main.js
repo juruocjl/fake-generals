@@ -21,16 +21,16 @@ app.use(session({
     saveUninitialized: true
 }))
 const mysql = require('mysql');
+var db = mysql.createConnection({
+	host:config.dbhost,port:config.dbport,user:config.dbuser,
+	password:config.dbpswd,database:config.dbname});
+db.connect();
 function fail(title,text){return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';}
 function calcvip(donate){if(donate>25)return 3;if(donate>10)return 2;if(donate>0)return 1;return 0;}
 var infos=md.render('# 操作说明\n'+fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
 app.get('/', function (req,res) {
 	//console.log(req.session.userid,req.session.pswd)
 	if(req.session.userid&&req.session.pswd){
-		var db = mysql.createConnection({
-		  host:config.dbhost,port:config.dbport,user:config.dbuser,
-		  password:config.dbpswd,database:config.dbname});
-		db.connect();
 		var sql = 'SELECT * FROM users WHERE id='+req.session.userid;
 		db.query(sql,(err,result)=>{
 			if(err){
@@ -48,7 +48,6 @@ app.get('/', function (req,res) {
 				res.sendFile(path.join(__dirname,"index.html"));
 			}
 		});
-		db.end();
 	}else{
 		res.sendFile(path.join(__dirname,"login.html"));
 	}
@@ -63,10 +62,6 @@ app.get('/main.css', function (req,res) {
    res.sendFile(path.join(__dirname,"main.css"));
 })
 app.get('/getfile', function (req,res) {
-	var db = mysql.createConnection({
-	  host:config.dbhost,port:config.dbport,user:config.dbuser,
-	  password:config.dbpswd,database:config.dbname});
-	db.connect();
 	var sql='SELECT * from games WHERE id='+req.query.name;
 	db.query(sql,(err,result)=>{
 		if(err){
@@ -81,7 +76,6 @@ app.get('/getfile', function (req,res) {
 			}else res.send('Not Found');
 		}
 	});
-	db.end();
 })
 app.get('/askfgaksgfkhsgkf', function (req,res) {
 	req.session.userid=req.session.pswd=null;
@@ -98,10 +92,6 @@ function showname(name,rating){
 	return '<span class="legendary-grandmaster">'+name+'</span>';
 }
 app.get('/donationrk', function (req,res){
-	var db = mysql.createConnection({
-		  host:config.dbhost,port:config.dbport,user:config.dbuser,
-		  password:config.dbpswd,database:config.dbname});
-	db.connect();
 	var sql='SELECT * from users WHERE donation>0 ORDER BY donation DESC LIMIT 20';
 	db.query(sql,(err,result)=>{
 		if(err){
@@ -116,13 +106,8 @@ app.get('/donationrk', function (req,res){
 			res.send(html);
 		}
 	});
-	db.end();
 });
 app.get('/ratingrk', function (req,res){
-	var db = mysql.createConnection({
-		  host:config.dbhost,port:config.dbport,user:config.dbuser,
-		  password:config.dbpswd,database:config.dbname});
-	db.connect();
 	var sql='SELECT * from users ORDER BY rating DESC LIMIT 20';
 	db.query(sql,(err,result)=>{
 		if(err){
@@ -137,7 +122,6 @@ app.get('/ratingrk', function (req,res){
 			res.send(html);
 		}
 	});
-	db.end();
 });
 app.get('/infos',function(req,res){
 	res.send(infos);
@@ -145,10 +129,6 @@ app.get('/infos',function(req,res){
 app.post('/submit',function(req,res){
     //console.log(req.body);
     if(req.body.type=="login"){
-		var db = mysql.createConnection({
-		  host:config.dbhost,port:config.dbport,user:config.dbuser,
-		  password:config.dbpswd,database:config.dbname});
-		db.connect();
 		var sql = 'SELECT * FROM users WHERE name="'+req.body.name+'"';
 		db.query(sql,(err,result)=>{
 			if(err){
@@ -167,7 +147,6 @@ app.post('/submit',function(req,res){
 				}
 			}
 		});
-		db.end();
 	}else{
 		if(!req.body.name.match(/^[a-z0-9]+$/gi)){
 			res.send(fail('注册失败','只能使用小写字母和数字'));
@@ -180,10 +159,6 @@ app.post('/submit',function(req,res){
 		}else if(req.body.pswd.length<8){
 			res.send(fail('注册失败','密码至少为8个字符'));
 		}else{
-			var db = mysql.createConnection({
-			  host:config.dbhost,port:config.dbport,user:config.dbuser,
-			  password:config.dbpswd,database:config.dbname});
-			db.connect();
 			var sql = 'SELECT * FROM users WHERE name="'+req.body.name+'"';
 			db.query(sql,(err,result)=>{
 				if(err){
@@ -192,10 +167,6 @@ app.post('/submit',function(req,res){
 				}else{
 					//console.log(result);
 					if(result.length==0){
-						var db = mysql.createConnection({
-						  host:config.dbhost,port:config.dbport,user:config.dbuser,
-						  password:config.dbpswd,database:config.dbname});
-						db.connect();
 						var sql = 'INSERT INTO `users`(`name`, `pswd`) VALUES (?,?)';
 						db.query(sql,[req.body.name,md5(req.body.pswd)],(err,result)=>{
 							if(err){
@@ -208,21 +179,15 @@ app.post('/submit',function(req,res){
 								res.redirect('/')
 							}
 						});
-						db.end();
 					}else{
 						res.send(fail('注册失败','用户名已被注册'));
 					}
 				}
 			});
-			db.end();
 		}
 	}
 })
 app.get('/qry',function(req,res){
-	var db = mysql.createConnection({
-		  host:config.dbhost,port:config.dbport,user:config.dbuser,
-		  password:config.dbpswd,database:config.dbname});
-	db.connect();
 	var sql='SELECT users from games WHERE id='+req.query.name;
 	db.query(sql,(err,result)=>{
 		var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating变化查询</h1><input id="name" value="'+req.query.name+'"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button> <a href="replay?name='+req.query.name+'">回放</a><br>';
@@ -242,7 +207,6 @@ app.get('/qry',function(req,res){
 		html+='</body></html>';
 		res.send(html);
 	});
-	db.end();
 });
 const wyh="1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
 function randstr(len){
@@ -301,10 +265,6 @@ function getCookie(cookie,cname) {
 }
 var ws=io.createServer(connection=>{
 	console.log('new connection...');
-	var db = mysql.createConnection({
-		host:config.dbhost,port:config.dbport,user:config.dbuser,
-	password:config.dbpswd,database:config.dbname});
-	db.connect();
 	var userid=getCookie(connection.headers.cookie,"userid");
 	var username=decodeURIComponent(getCookie(connection.headers.cookie,"username"));
 	var pswd=getCookie(connection.headers.cookie,"pswd");
@@ -324,7 +284,6 @@ var ws=io.createServer(connection=>{
 			console.log(username,vip);
 		}
 	});
-	db.end();
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
 		//console.log(data);
@@ -405,7 +364,6 @@ var ws=io.createServer(connection=>{
 																	for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
 																		map[x][y][1]=i;
 																	map[xx][yy][0]=1;
-																	players[i].kill++;
 																	players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 																	players[i].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 																}else if(map[xx][yy][0]!=3){
@@ -456,10 +414,6 @@ var ws=io.createServer(connection=>{
 										players[i].Delta+=200-300*(players[i].rk-1)/(players.length-1);
 								console.log(players);
 								for(var i=0;i<players.length;i++){
-									var db = mysql.createConnection({
-									  host:config.dbhost,port:config.dbport,user:config.dbuser,
-									  password:config.dbpswd,database:config.dbname});
-									db.connect();
 									players[i].Delta=Math.floor((players[i].Delta)*kk);
 									var sql = 'UPDATE users SET rating = '+Math.max(1000,players[i].rating+players[i].Delta)+' WHERE id="'+players[i].uid+'"';
 									db.query(sql,(err,result)=>{
@@ -467,7 +421,6 @@ var ws=io.createServer(connection=>{
 											console.error(err);
 										}
 									});
-									db.end();
 								}
 								users=[];
 								for(var i=0;i<players.length;i++)
@@ -480,10 +433,6 @@ var ws=io.createServer(connection=>{
 										'delta':players[i].Delta,
 										'guaji':players[i].guaji
 									}
-								var db = mysql.createConnection({
-									  host:config.dbhost,port:config.dbport,user:config.dbuser,
-									  password:config.dbpswd,database:config.dbname});
-								db.connect();
 								var sql = 'INSERT INTO `games` (`everyadd`,  `users`) VALUES (?, ?)';
 								db.query(sql,[everyadd,JSON.stringify(users)],(err,result)=>{
 									if(err){
@@ -506,7 +455,6 @@ var ws=io.createServer(connection=>{
 										clearInterval(timer);
 									}
 								});
-								db.end();
 							}else{
 								ws.connections.forEach((connection)=>{
 									connection.send(JSON.stringify({'typ':'new turn','turn':turn,'rank':rank}));
