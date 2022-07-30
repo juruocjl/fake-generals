@@ -76,7 +76,7 @@ app.get('/getfile', function (req,res) {
 			if(result.length==1){
 				var everyadd=JSON.parse(result[0].everyadd);
 				var users=JSON.parse(result[0].users);
-				var his=JSON.parse(fs.readFileSync(path.join(__dirname,req.query.name+'.json')));
+				var his=JSON.parse(fs.readFileSync(path.join(__dirname,'replay',req.query.name+'.json')));
 				res.send(JSON.stringify({'everyadd':everyadd,'users':users,'his':his}));
 			}else res.send('Not Found');
 		}
@@ -441,7 +441,7 @@ var ws=io.createServer(connection=>{
 							}
 							if(nowalive<=1){
 								var winner=-1;
-								var kk=Math.min(1,Math.sqrt((players.length-1)/10));
+								var kk=Math.min(0.5,Math.sqrt((players.length-1)/18));
 								if(nowalive){
 									for(winner=0;winner<players.length;winner++)if(players[winner].alive){
 										dieturn[dieturn.length]=winner;break;
@@ -485,7 +485,7 @@ var ws=io.createServer(connection=>{
 									  host:config.dbhost,port:config.dbport,user:config.dbuser,
 									  password:config.dbpswd,database:config.dbname});
 									db.connect();
-									players[i].Delta=Math.floor((players[i].Delta+inc)*kk);
+									players[i].Delta=Math.floor((players[i].Delta)*kk);
 									var sql = 'UPDATE users SET rating = rating + '+players[i].Delta+' WHERE id="'+players[i].uid+'"';
 									db.query(sql,(err,result)=>{
 										if(err){
@@ -521,7 +521,7 @@ var ws=io.createServer(connection=>{
 										ws.connections.forEach((connection)=>{
 											connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner,'name':result.insertId}));
 										});
-										fs.writeFileSync(path.join(__dirname,result.insertId+'.json'),JSON.stringify(his))
+										fs.writeFileSync(path.join(__dirname,'replay',result.insertId+'.json'),JSON.stringify(his))
 										start=false;
 										canjoin=true;
 										players=[];
