@@ -1,4 +1,32 @@
 const B=14;
+function checkMap(map){
+	var n=map.length;
+	var m=map[0].length;
+	var players=[],vis=[];
+	for(var i=0;i<n;i++)for(var j=0;j<m;j++)
+		if(map[i][j][0]==2)players[players.length]=[i,j];
+	for(var i=0;i<n;i++){
+		vis[i]=[];
+		for(var j=0;j<m;j++)
+			vis[i][j]=false;
+	}
+    var cnt=0;
+	function dfs(x,y){
+		if(map[x][y][0]!=0&&map[x][y][0]!=2)return;
+		if(vis[x][y])return;
+		vis[x][y]=1;cnt++;
+		if(x-1>=0)dfs(x-1,y);
+		if(x+1<n)dfs(x+1,y);
+		if(y-1>=0)dfs(x,y-1);
+		if(y+1<m)dfs(x,y+1);
+	};
+    for(var i=0;i<players.length;i++){
+        cnt=0;
+        dfs(players[i][0],players[i][1]);
+        if(cnt<10)return false;
+    }
+	return true;
+}
 function genMap(cnt){
 	var C=Math.ceil(Math.sqrt(cnt));
 	var n=C*B+1,m=C*B+1;
@@ -34,17 +62,21 @@ function genMap(cnt){
 		pos=rest[Math.floor(Math.random()*rest.length)];
 		map[pos[0]][pos[1]]=[3,-1,Math.floor(Math.random()*10)+40];
 	}
-	for(var i=0;i<n;i++){
-		var str="";
-		for(var j=0;j<m;j++)
-			if(map[i][j][0]==0)str+=' ';
-			else if(map[i][j][0]==-1)str+='m';
-			else if(map[i][j][0]==1)str+='t';
-			else if(map[i][j][0]==2)str+=map[i][j][1];
-			else if(map[i][j][0]==3)str+='s';
-		console.log(str);
+	if(checkMap(map)){
+		for(var i=0;i<n;i++){
+			var str="";
+			for(var j=0;j<m;j++)
+				if(map[i][j][0]==0)str+=' ';
+				else if(map[i][j][0]==-1)str+='m';
+				else if(map[i][j][0]==1)str+='t';
+				else if(map[i][j][0]==2)str+=map[i][j][1];
+				else if(map[i][j][0]==3)str+='s';
+			console.log(str);
+		}
+		return {n:n,m:m,map:map};
 	}
-	return {n:n,m:m,map:map};
+	console.log('err');
+	return genMap(cnt);
 	
 }
 exports.genMap=genMap;
