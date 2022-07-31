@@ -10,7 +10,8 @@ const md=require('markdown-it')();
 var md5 = require('md5-node');
 function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_OK);return true;}catch(err){return false;}}
 try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
-const gen = require('./gen.js');
+const genffa = require('./gen-ffa.js');
+const gensb = require('./gen-sb.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
 app.use(cookieParser())
@@ -242,6 +243,7 @@ var rank=[];
 var lst=-1;
 var his=[];
 var dieturn=[];
+var type="ffa";
 function pred(Map,val){
 	Map=JSON.parse(JSON.stringify(Map));
 	for(var i=0;i<n;i++)
@@ -296,7 +298,9 @@ var ws=io.createServer(connection=>{
 				setTimeout(()=>{
 					//console.log(players);
 					canjoin=false;
-					var res=gen.genMap(players.length);
+					var res;
+					if(type=="ffa")res=genffa.genMap(players.length);
+					if(type=="sb")res=gensb.genMap(players.length);
 					n=res.n;
 					m=res.m;
 					map=res.map;
@@ -402,6 +406,7 @@ var ws=io.createServer(connection=>{
 							if(nowalive<=1){
 								var winner=-1;
 								var kk=Math.min(1,(players.length-1)/4);
+								if(type!='ffa')kk=0;
 								if(nowalive){
 									for(winner=0;winner<players.length;winner++)if(players[winner].alive){
 										dieturn[dieturn.length]=winner;break;
@@ -526,6 +531,13 @@ var ws=io.createServer(connection=>{
 				dieturn[dieturn.length]=id;
 			}
 		}
+		if(data.typ=="type change"){
+			if(!start){
+				type=data.type;
+				if(type=="ffa"||type=="sb")
+					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
+			}
+		}
 	})
 	connection.on("close", function (code, reason) {
 		console.log("Connection closed");
@@ -537,6 +549,7 @@ var ws=io.createServer(connection=>{
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
 	else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
+	connection.send(JSON.stringify({'typ':'type change','type':type}));
 });
 ws.listen(3000)
 var server = app.listen(config.port)

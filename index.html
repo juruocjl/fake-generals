@@ -19,6 +19,8 @@
 		<div>当前rating为<span id="rating"></span></div><br>
 		<button id="start">Start!</button>
 		<div>当前在线：<span id="online">?</span>人</div>
+		<input type="radio" name="gametype" value="ffa" id="ffa">FFA(rated)<br>
+		<input type="radio" name="gametype" value="sb" id="sb">伞兵大战
 		</div>
 	</div>
 	<div class="gameend" style="display:none">
@@ -146,6 +148,11 @@
 	$('#name').html(showname(user,rating)+'<i class="vip'+vip+'"></i>');
 	$('#rating').html(showname(rating,rating));
 	var ws = new WebSocket("ws://"+location.hostname+":3000");
+	$('input[type=radio][name=gametype]').change(()=>{
+		var gametype = $('input:radio[name="gametype"]:checked').val();
+		console.log(gametype);
+		ws.send(JSON.stringify({'typ':'type change','type':gametype}));
+	})
 	$('#start').click(() => {ws.send(JSON.stringify({'typ': 'startgame'}));});
 	const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 	var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
@@ -346,6 +353,9 @@
 			$(".ribbons").css('display','none');
 			$(".notice").css('display','none');
 			$(".toolcontain").css('display','none');
+		}
+		if(data.typ=="type change"){
+			document.getElementById(data.type).checked=true;
 		}
 		if(data.typ=='init game'){
 			userlist = data.users;
