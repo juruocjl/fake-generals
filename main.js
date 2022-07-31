@@ -365,7 +365,7 @@ var ws=io.createServer(connection=>{
 																		map[x][y][1]=i;
 																	map[xx][yy][0]=1;
 																	players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
-																	players[i].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
+																	players[dead].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 																}else if(map[xx][yy][0]!=3){
 																	map[xx][yy][2]=val-map[xx][yy][2];
 																	map[xx][yy][1]=i;
