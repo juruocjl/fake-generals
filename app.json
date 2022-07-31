@@ -1,0 +1,25 @@
+{
+    "apps": [
+        {
+            "name": "generals",
+            "cwd": ".",
+            "script": "main.js",
+            "watch": true,
+            "ignore_watch": [
+                "node_modules",
+                "replay",
+                "logs"
+            ],
+            "error_file": "./logs/app-err.log",
+            "out_file": "./logs/app-out.log",
+            "merge_logs": true,
+            "log_date_format": "YYYY-MM-DD HH:mm:ss",
+            "min_uptime": "60s",
+            "max_restarts": 30,
+            "restart_delay": 60,
+            "env": {
+                "NODE_ENV": "production"
+            }
+        }
+    ]
+}

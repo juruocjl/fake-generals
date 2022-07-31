@@ -1,5 +1,5 @@
 var express = require('express')
-var session = require("express-session");
+var session = require("cookie-session");
 const bp = require('body-parser');
 const cookieParser=require('cookie-parser')
 var app = express();
@@ -288,7 +288,7 @@ var ws=io.createServer(connection=>{
 		data=JSON.parse(data);
 		//console.log(data);
 		if(data.typ=='startgame'){
-			if(!start){
+			if(!start&&ws.connections.length>1){
 				start=true;
 				ws.connections.forEach((connection)=>{
 					connection.send(JSON.stringify({'typ':'start'}));
@@ -349,7 +349,7 @@ var ws=io.createServer(connection=>{
 														if((now.length==3&&now[2]<4)||(now.length==5&&now[4]==0))
 															val=map[now[0]][now[1]][2]-1;
 														else val=Math.floor(map[now[0]][now[1]][2]/2);
-														console.log(map[xx][yy],val);
+														//console.log(map[xx][yy],val);
 														map[now[0]][now[1]][2]-=val;
 														if(map[xx][yy][1]==i){
 															if(map[xx][yy][0]!=3)map[xx][yy][2]+=val;
