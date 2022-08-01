@@ -363,13 +363,15 @@ var ws=io.createServer(connection=>{
 																if(map[xx][yy][0]==2){
 																	map[xx][yy][2]=val-map[xx][yy][2];
 																	var dead=map[xx][yy][1];
-																	players[dead].alive=false;
-																	dieturn[dieturn.length]=dead;
+																	if(players[dead].alive){
+																		players[dead].alive=false;
+																		dieturn[dieturn.length]=dead;
+																		players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
+																		players[dead].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
+																	}
 																	for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
 																		map[x][y][1]=i;
 																	map[xx][yy][0]=1;
-																	players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
-																	players[dead].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 																}else if(map[xx][yy][0]!=3){
 																	map[xx][yy][2]=val-map[xx][yy][2];
 																	map[xx][yy][1]=i;
