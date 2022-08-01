@@ -19,7 +19,17 @@
             "restart_delay": 60,
             "env": {
                 "NODE_ENV": "production"
-            }
+            },
         }
-    ]
+    ],
+    "deploy" : {
+        "production" : {
+            "user" : "root",
+            "host" : "120.48.129.231",
+            "ref"  : "origin/master",
+            "repo" : "git@github.com:juruocjl/fake-generals.git",
+            "path" : "/root/",
+            "post-deploy" : "npm install && pm2 startOrRestart app.json --env production"
+        }
+    }
 }
