@@ -26,9 +26,9 @@
         "production" : {
             "user" : "root",
             "host" : "120.48.129.231",
-            "ref"  : "origin/master",
+            "ref"  : "origin/main",
             "repo" : "git@github.com:juruocjl/fake-generals.git",
-            "path" : "/root/",
+            "path" : "/root/fake-generals-server/",
             "post-deploy" : "npm install && pm2 startOrRestart app.json --env production"
         }
     }
