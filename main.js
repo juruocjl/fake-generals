@@ -191,7 +191,7 @@ app.post('/submit',function(req,res){
 app.get('/qry',function(req,res){
 	var sql='SELECT users from games WHERE id='+req.query.name;
 	db.query(sql,(err,result)=>{
-		var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating变化查询</h1><input id="name" value="'+req.query.name+'"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button> <a href="replay?name='+req.query.name+'">回放</a><br>';
+		var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating变化查询</h1><input id="name" value="'+req.query.name+'"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button> <a href="replay?name='+req.query.name+'" target="_blank">回放</a><br>';
 		if(err)html+="查询失败 "+err;
 		else if(result.length){
 			html+='<table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>△</th><th>变化</th></tr>';
