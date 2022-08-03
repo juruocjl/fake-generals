@@ -12,6 +12,7 @@ function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_O
 try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
 const genffa = require('./gen-ffa.js');
 const gensb = require('./gen-sb.js');
+const gendark = require('./gen-dark.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
 app.use(cookieParser())
@@ -301,6 +302,7 @@ var ws=io.createServer(connection=>{
 					var res;
 					if(type=="ffa")res=genffa.genMap(players.length);
 					if(type=="sb")res=gensb.genMap(players.length);
+					if(type=="dark")res=gendark.genMap(players.length);
 					n=res.n;
 					m=res.m;
 					map=res.map;
@@ -311,11 +313,12 @@ var ws=io.createServer(connection=>{
 						for(var j=0;j<n;j++){
 							players[i].lstmap[j]=[];
 							for(var k=0;k<m;k++)
-								if(map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)players[i].lstmap[j][k]=[-2];
+								if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark")
+									players[i].lstmap[j][k]=[-2];
 								else players[i].lstmap[j][k]=[-3];
 						}
 					for(var i=0;i<n;i++)for(var j=0;j<m;j++)
-						if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)firstmap+="0";
+						if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")firstmap+="0";
 						else firstmap+="1";
 					ws.connections.forEach((connection)=>{
 						connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
@@ -487,11 +490,12 @@ var ws=io.createServer(connection=>{
 				for(var i=0;i<n;i++){
 					for(var j=0;j<m;j++){
 						var flag=false,now;
-						for(var dx=-1;dx<=1;dx++)for(var dy=-1;dy<=1;dy++)
+						var range=(type=="dark"&&map[i][j][0]!=2?0:1);
+						for(var dx=-range;dx<=range;dx++)for(var dy=-range;dy<=range;dy++)
 							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0&&map[i+dx][j+dy][1]==id)
 								flag=true;
 						if(!flag){
-							if(map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)now=[-2];
+							if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")now=[-2];
 							else now=[-3];
 						}else now=JSON.parse(JSON.stringify(map[i][j]));
 						if(now.toString()!=players[id].lstmap[i][j].toString()){
@@ -536,7 +540,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=="type change"){
 			if(!start){
 				type=data.type;
-				if(type=="ffa"||type=="sb")
+				if(type=="ffa"||type=="sb"||type=="dark")
 					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
 			}
 		}
