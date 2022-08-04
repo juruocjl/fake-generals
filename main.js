@@ -303,7 +303,7 @@ var ws=io.createServer(connection=>{
 		data=JSON.parse(data);
 		//console.log(data);
 		if(data.typ=='startgame'){
-			if(!start&&member[0].length+member[1]>1){
+			if(!start&&member[0].length+member[1].length>1){
 				start=true;
 				if(type!="team"){
 					member[0].forEach((x)=>{
