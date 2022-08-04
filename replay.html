@@ -89,7 +89,11 @@
 			for(var j=0;j<m;j++){
 				if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
 					if(Map[i][j][0]==0)Map[i][j][2]+=val;
-					else Map[i][j][2]++;
+					else if(Map[i][j][0]!=4)Map[i][j][2]++;
+					else{
+						Map[i][j][2]--;
+						if(Map[i][j][2]==0)Map[i][j][1]=-1;
+					}
 				}
 			}
 		return Map;
@@ -150,6 +154,11 @@
 						else now.style.background="#757575";
 						if(map[i][j][2])inner="<span class='umbrella num visible'>"+map[i][j][2]+"</span>";
 						else inner="<span class='umbrella num visible'></span>";
+					}else if(map[i][j][0]==4){
+						if(map[i][j][1]>=0)now.style.background=color[map[i][j][1]];
+						else now.style.background="#757575";
+						if(map[i][j][2])inner="<span class='water num visible'>"+map[i][j][2]+"</span>";
+						else inner="<span class='water num visible'></span>";
 					}
 				}
 				if(now.innerHTML!=inner)now.innerHTML=inner;

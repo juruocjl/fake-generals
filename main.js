@@ -13,6 +13,7 @@ try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
 const genffa = require('./gen-ffa.js');
 const gensb = require('./gen-sb.js');
 const gendark = require('./gen-dark.js');
+const genteam = require('./gen-team.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
 app.use(cookieParser())
@@ -233,7 +234,6 @@ class Deque {
 	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
 var start=false;
-var canjoin=true;
 var players=[];
 var map=[];
 var users=[];
@@ -243,20 +243,22 @@ const eachturn=config.eachturn;
 const guanji=config.guaji;
 var turn=0;
 var rank=[];
-var lst=-1;
 var his=[];
 var dieturn=[];
 var member=[[],[]];
 var type="ffa";
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
-	if(!add)
-		return Map;
+	if(!add)return Map;
 	for(var i=0;i<n;i++)
 		for(var j=0;j<m;j++){
 			if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
 				if(Map[i][j][0]==0)Map[i][j][2]+=val;
-				else Map[i][j][2]++;
+				else if(Map[i][j][0]!=4)Map[i][j][2]++;
+				else{
+					Map[i][j][2]--;
+					if(Map[i][j][2]==0)Map[i][j][1]=-1;
+				}
 			}
 		}
 	return Map;
@@ -360,6 +362,12 @@ var ws=io.createServer(connection=>{
 				if(type=="ffa")res=genffa.genMap(players.length);
 				if(type=="sb")res=gensb.genMap(players.length);
 				if(type=="dark")res=gendark.genMap(players.length);
+				if(type=="team"){
+					var teams=[[],[]];
+					for(var i=0;i<players.length;i++)
+						teams[players[i].team].push(i);
+					res=genteam.genMap(teams[0],teams[1]);
+				}
 				n=res.n;
 				m=res.m;
 				map=res.map;
@@ -403,8 +411,11 @@ var ws=io.createServer(connection=>{
 												else val=Math.floor(map[now[0]][now[1]][2]/2);
 												//console.log(map[xx][yy],val);
 												map[now[0]][now[1]][2]-=val;
-												if(map[xx][yy][1]==i){
-													if(map[xx][yy][0]!=3)map[xx][yy][2]+=val;
+												if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
+													if(map[xx][yy][0]!=3){
+														map[xx][yy][2]+=val;
+														if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
+													}
 													else map[now[0]][now[1]][2]+=val;
 												}else{
 													if(val>map[xx][yy][2]){
@@ -443,6 +454,12 @@ var ws=io.createServer(connection=>{
 									map[i][j][2]++;
 								else if(map[i][j][0]==2)
 									map[i][j][2]++;
+								else if(map[i][j][0]==4){
+									map[i][j][2]--;
+									if(map[i][j][2]<=0)
+										map[i][j][1]=-1,
+										map[i][j][2]=0;
+								}
 						if((turn+1)%everyadd==0)
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
@@ -460,19 +477,26 @@ var ws=io.createServer(connection=>{
 						dieturn[dieturn.length]=i;
 					}
 					var nowalive=0;
-					for(var i=0;i<players.length;i++)
-						rank[i]=[0,0],nowalive+=players[i].alive;
+					var teamalive=[];
+					for(var i=0;i<players.length;i++)teamalive[players[i].team]=0;
+					for(var i=0;i<players.length;i++){
+						rank[i]=[0,0];
+						if(players[i].alive)
+							teamalive[players[i].team]=1;
+					}
+					for(var i=0;i<teamalive.length;i++)
+						nowalive+=teamalive[i];
 					for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]>=0&&map[i][j][1]>=0){
 						rank[map[i][j][1]][1]++;
 						rank[map[i][j][1]][0]+=map[i][j][2];
 					}
+					console.log(nowalive);
 					if(nowalive<=1){
-						var winner=-1;
 						var kk=Math.min(1,(players.length-1)/4);
 						if(type!='ffa')kk=0;
 						if(nowalive){
-							for(winner=0;winner<players.length;winner++)if(players[winner].alive){
-								dieturn[dieturn.length]=winner;break;
+							for(i=0;i<players.length;i++)if(players[i].alive){
+								dieturn[dieturn.length]=i;
 							}
 						}
 						for(var i=0;i<players.length;i++)
@@ -499,7 +523,8 @@ var ws=io.createServer(connection=>{
 								'rk':players[i].rk,
 								'rating':players[i].rating,
 								'delta':players[i].Delta,
-								'guaji':players[i].guaji
+								'guaji':players[i].guaji,
+								'team':players[i].team
 							}
 						var sql = 'INSERT INTO `games` (`type`,  `ver`,  `everyadd`,  `users`) VALUES (?, ?, ?, ?)';
 						db.query(sql,[type,2,everyadd,JSON.stringify(users)],(err,result)=>{
@@ -507,7 +532,7 @@ var ws=io.createServer(connection=>{
 								console.error(err);
 							}else{
 								ws.connections.forEach((connection)=>{
-									connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner,'name':result.insertId}));
+									connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'name':result.insertId}));
 								});
 								fs.writeFileSync(path.join(__dirname,'replay',result.insertId+'.json'),JSON.stringify(his))
 								start=false;
@@ -542,7 +567,8 @@ var ws=io.createServer(connection=>{
 						var flag=false,now;
 						var range=(type=="dark"&&map[i][j][0]!=2?0:1);
 						for(var dx=-range;dx<=range;dx++)for(var dy=-range;dy<=range;dy++)
-							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0&&map[i+dx][j+dy][1]==id)
+							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0
+								&&map[i+dx][j+dy][1]>=0&&players[map[i+dx][j+dy][1]].team==players[id].team)
 								flag=true;
 						if(!flag){
 							if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")now=[-2];
@@ -590,7 +616,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=="type change"){
 			if(!start){
 				type=data.type;
-				if(type=="ffa"||type=="sb"||type=="dark")
+				if(type=="ffa"||type=="sb"||type=="dark"||type=="team")
 					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
 			}
 		}
@@ -607,17 +633,14 @@ var ws=io.createServer(connection=>{
 	connection.on("close", function (code, reason) {
 		console.log("Connection closed");
 		quit();
-		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
 	})
 	connection.on("error",() => {
 		console.log('服务异常关闭...');
 		quit();
-		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
-	else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 	connection.send(JSON.stringify({'typ':'type change','type':type}));
 	connection.send(JSON.stringify({'typ':'team change','member':member}));
 });
