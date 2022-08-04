@@ -71,15 +71,17 @@ app.get('/getfile', function (req,res) {
 			return;
 		}else{
 			if(result.length==1){
-				var everyadd=JSON.parse(result[0].everyadd);
+				var ver=parseInt(result[0].ver);
+				//console.log(ver);
+				var everyadd=parseInt(result[0].everyadd);
 				var users=JSON.parse(result[0].users);
 				var his=JSON.parse(fs.readFileSync(path.join(__dirname,'replay',req.query.name+'.json')));
-				res.send(JSON.stringify({'everyadd':everyadd,'users':users,'his':his}));
+				res.send(JSON.stringify({'ver':ver,'everyadd':everyadd,'users':users,'his':his}));
 			}else res.send('Not Found');
 		}
 	});
 })
-app.get('/askfgaksgfkhsgkf', function (req,res) {
+app.get('/logout', function (req,res) {
 	req.session.userid=req.session.pswd=null;
 	res.redirect('/');
 })
@@ -245,8 +247,10 @@ var lst=-1;
 var his=[];
 var dieturn=[];
 var type="ffa";
-function pred(Map,val){
+function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
+	if(!add)
+		return Map;
 	for(var i=0;i<n;i++)
 		for(var j=0;j<m;j++){
 			if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
@@ -328,18 +332,7 @@ var ws=io.createServer(connection=>{
 						()=>{
 							++turn;
 							console.log('turn',turn);
-							var predMap=pred(map,turn%everyadd==0);
-							for(var i=0;i<n;i++)
-								for(var j=0;j<m;j++)
-									if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
-										map[i][j][2]++;
-									else if(map[i][j][0]==2)
-										map[i][j][2]++;
-							if(turn%everyadd==0)
-								for(var i=0;i<n;i++)
-									for(var j=0;j<m;j++)
-										if(map[i][j][0]==0&&map[i][j][1]>=0)
-											map[i][j][2]++;
+							var predMap=pred(map,(turn+1)%everyadd==0,turn%2==1);
 							const ddx=[-1,1,0,0];
 							const ddy=[0,0,-1,1];
 							for(var i=0;i<players.length;i++)if(players[i].alive){
@@ -390,6 +383,19 @@ var ws=io.createServer(connection=>{
 														break;
 													}
 								}
+							}
+							if(turn%2==1){
+								for(var i=0;i<n;i++)
+									for(var j=0;j<m;j++)
+										if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
+											map[i][j][2]++;
+										else if(map[i][j][0]==2)
+											map[i][j][2]++;
+								if((turn+1)%everyadd==0)
+									for(var i=0;i<n;i++)
+										for(var j=0;j<m;j++)
+											if(map[i][j][0]==0&&map[i][j][1]>=0)
+												map[i][j][2]++;
 							}
 							his[turn]=[];
 							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
@@ -443,8 +449,8 @@ var ws=io.createServer(connection=>{
 										'delta':players[i].Delta,
 										'guaji':players[i].guaji
 									}
-								var sql = 'INSERT INTO `games` (`everyadd`,  `users`) VALUES (?, ?)';
-								db.query(sql,[everyadd,JSON.stringify(users)],(err,result)=>{
+								var sql = 'INSERT INTO `games` (`type`,  `ver`,  `everyadd`,  `users`) VALUES (?, ?, ?, ?)';
+								db.query(sql,[type,2,everyadd,JSON.stringify(users)],(err,result)=>{
 									if(err){
 										console.error(err);
 									}else{
@@ -485,7 +491,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=='get map'){
 			//console.log(players,data);
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
-				players[id].lstmap=pred(players[id].lstmap,turn%everyadd==0);
+				players[id].lstmap=pred(players[id].lstmap,(turn+1)%everyadd==0,turn%2==1);
 				var diff=[];
 				for(var i=0;i<n;i++){
 					for(var j=0;j<m;j++){
@@ -506,9 +512,9 @@ var ws=io.createServer(connection=>{
 					}
 				}
 				if(data.full)
-					connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()}))
+					connection.send(JSON.stringify({'typ':'map','val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()}))
 				else
-					connection.send(JSON.stringify({'typ':'map','val':turn%everyadd==0,'full':false,'diff':diff,'queue':players[id].queue.to_string()}));
+					connection.send(JSON.stringify({'typ':'map','val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()}));
 				return;
 			}
 			connection.send(JSON.stringify({'typ':'map','val':false,'full':false,'diff':[],'queue':""}));

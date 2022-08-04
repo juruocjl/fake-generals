@@ -81,8 +81,10 @@
 	var everyadd;
 	var rank=[];
 	var turn=0;
-	function pred(Map,val){
+	function pred(Map,val,add){
 		Map=JSON.parse(JSON.stringify(Map));
+		if(!add)
+			return Map;
 		for(var i=0;i<n;i++)
 			for(var j=0;j<m;j++){
 				if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
@@ -182,7 +184,7 @@
 			maps[0]=data.his[0];
 			everyadd=data.everyadd;
 			for(var i=1;i<data.his.length;i++){
-				maps[i]=pred(maps[i-1],i%everyadd==0);
+				maps[i]=pred(maps[i-1],(i+1)%everyadd==0,(data.ver>=2)?i%2==1:true);
 				data.his[i].forEach((x)=>{maps[i][x[0]][x[1]]=x[2];});
 			}
 			for(var i=0;i<n;i++)
@@ -199,17 +201,17 @@
 				$('#rank').append('<tr data="'+i+'"></tr>')
 			show(maps[0]);
 			$('.pre').click(()=>{
-				if(turn>0)turn--,show(maps[turn]),$('#turn').text(turn);
+				if(turn>0)turn--,show(maps[turn]),$('#turn').text(data.ver>=2?Math.ceil(turn/2):turn);
 			});
 			$('.next').click(()=>{
-				if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(turn);
+				if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(data.ver>=2?Math.ceil(turn/2):turn);
 				else alert('end');
 			})
 			document.onkeydown=function(event){
 			   var e = event || window.event || arguments.callee.caller.arguments[0];
-			   if(e && e.keyCode==65)if(turn>0)turn--,show(maps[turn]),$('#turn').text(turn);
+			   if(e && e.keyCode==65)if(turn>0)turn--,show(maps[turn]),$('#turn').text(data.ver>=2?Math.ceil(turn/2):turn);
 			   if(e && e.keyCode==68){
-				  if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(turn);
+				  if(turn+1<maps.length)turn++,show(maps[turn]),$('#turn').text(data.ver>=2?Math.ceil(turn/2):turn);
 				  else alert('end');
 			   }
 		   };

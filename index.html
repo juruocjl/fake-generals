@@ -176,7 +176,8 @@
 	var map=[];
 	var vis=[];
 	var notinit=true;
-	function pred(Map,val){
+	function pred(Map,val,add){
+		if(!add)return;
 		for(var i=0;i<n;i++)
 			for(var j=0;j<m;j++){
 				if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
@@ -393,12 +394,12 @@
 		if(data.typ=='new turn'){
 			if(notinit)ws.send(JSON.stringify({'typ': 'get map','full':true}));
 			else ws.send(JSON.stringify({'typ': 'get map','full':false}));
-			$('#turn').text(data.turn);
+			$('#turn').text(Math.ceil(data.turn/2));
 			showrk(data.rank);
 		}
 		if(data.typ=='map'){
 			if(!data.full){
-				pred(map,data.val);
+				pred(map,data.val,data.add);
 				for(var i=0;i<data.diff.length;i++)
 					map[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
 			}else map=data.map,notinit=false;
