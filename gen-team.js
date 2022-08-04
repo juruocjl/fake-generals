@@ -126,6 +126,6 @@ function genMap(team1,team2){
 		return {n:n,m:m,map:map};
 	}
 	console.log('err');
-	return genMap(cnt);
+	return genMap(team1,team2);
 }
 exports.genMap=genMap;
