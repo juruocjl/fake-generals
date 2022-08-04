@@ -21,7 +21,20 @@
 		<div>当前在线：<span id="online">?</span>人</div>
 		<input type="radio" name="gametype" value="ffa" id="ffa">FFA(rated)<br>
 		<input type="radio" name="gametype" value="sb" id="sb">伞兵大战<br>
-		<input type="radio" name="gametype" value="dark" id="dark">浓雾模式
+		<input type="radio" name="gametype" value="dark" id="dark">浓雾模式<br>
+		<div style="display: flex;">
+			<span>
+				<div id="team1" class="teamchoose">team1</div>
+				<div id="team1name" class="teamname"></div>
+			</span>
+			<span>
+				<div id="team2" class="teamchoose">team2</div>
+				<div id="team2name" class="teamname">233</div>
+			</span>
+			<span>
+				<div id="cancel" class="teamchoose">cancel</div>
+			</span>
+		</div>
 		</div>
 	</div>
 	<div class="gameend" style="display:none">
@@ -311,6 +324,16 @@
 			$('#bxbx').click(()=>{$('.gameend').css('display','none');});
 	   }
     };
+	document.getElementById('team1').onclick=()=>{
+		ws.send(JSON.stringify({'type':'join','team':0}));
+	}
+	document.getElementById('team2').onclick=()=>{
+		ws.send(JSON.stringify({'type':'join','team':1}));
+	}
+	document.getElementById('cancel').onclick=()=>{
+		ws.send(JSON.stringify({'type':'cancel'}));
+	}
+	
 	ws.onmessage = (evt)=>{
 		var data = JSON.parse(evt.data);
 		if (data.typ == 'already start'){
@@ -346,20 +369,25 @@
 			$(".notice").css('display','none');
 			$(".toolcontain").css('display','none');
 		}
-		if (data.typ == 'start'){
-			ws.send(JSON.stringify({
-				'typ': 'join game',
-				'name': user
-			}));
+		if(data.typ=="type change"){
+			document.getElementById(data.type).checked=true;
+		}
+		if(data.typ=="team change"){
+			var member=data.member;
+			var str=["",""];
+			for(var i=0;i<2;i++)
+				member[i].forEach((x)=>{
+					str[i]+=x.name+'<br>';
+				})
+			document.getElementById('team1name').innerHTML=str[0];
+			document.getElementById('team2name').innerHTML=str[1];
+			
+		}
+		if(data.typ=='init game'){
 			$(".index").css('display','none');
 			$(".ribbons").css('display','none');
 			$(".notice").css('display','none');
 			$(".toolcontain").css('display','none');
-		}
-		if(data.typ=="type change"){
-			document.getElementById(data.type).checked=true;
-		}
-		if(data.typ=='init game'){
 			userlist = data.users;
 			n=data.n;
 			m=data.m;

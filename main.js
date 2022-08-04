@@ -246,6 +246,7 @@ var rank=[];
 var lst=-1;
 var his=[];
 var dieturn=[];
+var member=[[],[]];
 var type="ffa";
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
@@ -291,201 +292,244 @@ var ws=io.createServer(connection=>{
 			console.log(username,vip);
 		}
 	});
+	var quit=()=>{
+		for(var i=0;i<member[0].length;i++)if(member[0][i].uid==userid)member[0].splice(i,1);
+		for(var i=0;i<member[1].length;i++)if(member[1][i].uid==userid)member[1].splice(i,1);
+	}
+	var join=(team)=>{
+		member[team].push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating)})
+	}
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
 		//console.log(data);
 		if(data.typ=='startgame'){
-			if(!start&&ws.connections.length>1){
+			if(!start&&member[0].length+member[1]>1){
 				start=true;
-				ws.connections.forEach((connection)=>{
-					connection.send(JSON.stringify({'typ':'start'}));
-				});
-				setTimeout(()=>{
-					//console.log(players);
-					canjoin=false;
-					var res;
-					if(type=="ffa")res=genffa.genMap(players.length);
-					if(type=="sb")res=gensb.genMap(players.length);
-					if(type=="dark")res=gendark.genMap(players.length);
-					n=res.n;
-					m=res.m;
-					map=res.map;
-					players.forEach((x)=>{users[users.length]={'name':x.name,'vip':x.vip,'rating':x.rating}});
-					console.log(users);
-					var firstmap="";
-					for(var i=0;i<players.length;i++)
-						for(var j=0;j<n;j++){
-							players[i].lstmap[j]=[];
-							for(var k=0;k<m;k++)
-								if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark")
-									players[i].lstmap[j][k]=[-2];
-								else players[i].lstmap[j][k]=[-3];
-						}
-					for(var i=0;i<n;i++)for(var j=0;j<m;j++)
-						if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")firstmap+="0";
-						else firstmap+="1";
-					ws.connections.forEach((connection)=>{
-						connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
+				if(type!="team"){
+					member[0].forEach((x)=>{
+						players[players.length]=
+						{
+							"name":x.name,
+							"uid":x.uid,
+							'vip':x.vip,
+							'rating':x.rating,
+							'Delta':0,'guaji':false,'queue':new Deque(),
+							'alive':true,'lstmap':[],'lstvis':0,
+							'team':players.length
+						};
 					});
-					his[0]=JSON.parse(JSON.stringify(map));
-					var timer=setInterval(
-						()=>{
-							++turn;
-							console.log('turn',turn);
-							var predMap=pred(map,(turn+1)%everyadd==0,turn%2==1);
-							const ddx=[-1,1,0,0];
-							const ddy=[0,0,-1,1];
-							for(var i=0;i<players.length;i++)if(players[i].alive){
-								while(players[i].queue.size()){
-									var now=players[i].queue.popFront();
-										var xx,yy;
-										if(now.length==3)xx=now[0]+ddx[now[2]%4],yy=now[1]+ddy[now[2]%4];
-										else xx=now[2],yy=now[3];
-										if(map[now[0]][now[1]][1]==i)
-											if(map[now[0]][now[1]][2]>1)
-												if(0<=xx&&xx<n&&0<=yy&&yy<m)
-													if(map[xx][yy][0]!=-1){
-														var val;
-														if((now.length==3&&now[2]<4)||(now.length==5&&now[4]==0))
-															val=map[now[0]][now[1]][2]-1;
-														else val=Math.floor(map[now[0]][now[1]][2]/2);
-														//console.log(map[xx][yy],val);
-														map[now[0]][now[1]][2]-=val;
-														if(map[xx][yy][1]==i){
-															if(map[xx][yy][0]!=3)map[xx][yy][2]+=val;
-															else map[now[0]][now[1]][2]+=val;
-														}else{
-															if(val>map[xx][yy][2]){
-																if(map[xx][yy][0]==2){
-																	map[xx][yy][2]=val-map[xx][yy][2];
-																	var dead=map[xx][yy][1];
-																	if(players[dead].alive){
-																		players[dead].alive=false;
-																		dieturn[dieturn.length]=dead;
-																		players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
-																		players[dead].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
-																	}
-																	for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
-																		map[x][y][1]=i;
-																	map[xx][yy][0]=1;
-																}else if(map[xx][yy][0]!=3){
-																	map[xx][yy][2]=val-map[xx][yy][2];
-																	map[xx][yy][1]=i;
-																}else{
-																	map[now[0]][now[1]][2]+=val-map[xx][yy][2];
-																	map[xx][yy][2]=0;
-																	map[xx][yy][1]=i;
-																}
+					member[1].forEach((x)=>{
+						players[players.length]=
+						{
+							"name":x.name,
+							"uid":x.uid,
+							'vip':x.vip,
+							'rating':x.rating,
+							'Delta':0,'guaji':false,'queue':new Deque(),
+							'alive':true,'lstmap':[],'lstvis':0,
+							'team':players.length
+						};
+					});
+				}else{
+					member[0].forEach((x)=>{
+						players[players.length]=
+						{
+							"name":x.name,
+							"uid":x.uid,
+							'vip':x.vip,
+							'rating':x.rating,
+							'Delta':0,'guaji':false,'queue':new Deque(),
+							'alive':true,'lstmap':[],'lstvis':0,
+							'team':0
+						};
+					});
+					member[1].forEach((x)=>{
+						players[players.length]=
+						{
+							"name":x.name,
+							"uid":x.uid,
+							'vip':x.vip,
+							'rating':x.rating,
+							'Delta':0,'guaji':false,'queue':new Deque(),
+							'alive':true,'lstmap':[],'lstvis':0,
+							'team':1
+						};
+					});
+				}
+				var res;
+				if(type=="ffa")res=genffa.genMap(players.length);
+				if(type=="sb")res=gensb.genMap(players.length);
+				if(type=="dark")res=gendark.genMap(players.length);
+				n=res.n;
+				m=res.m;
+				map=res.map;
+				players.forEach((x)=>{users[users.length]={'name':x.name,'vip':x.vip,'rating':x.rating}});
+				console.log(users);
+				var firstmap="";
+				for(var i=0;i<players.length;i++)
+					for(var j=0;j<n;j++){
+						players[i].lstmap[j]=[];
+						for(var k=0;k<m;k++)
+							if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark")
+								players[i].lstmap[j][k]=[-2];
+							else players[i].lstmap[j][k]=[-3];
+					}
+				for(var i=0;i<n;i++)for(var j=0;j<m;j++)
+					if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")firstmap+="0";
+					else firstmap+="1";
+				ws.connections.forEach((connection)=>{
+					connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
+				});
+				his[0]=JSON.parse(JSON.stringify(map));
+				var timer=setInterval(()=>{
+					++turn;
+					console.log('turn',turn);
+					var predMap=pred(map,(turn+1)%everyadd==0,turn%2==1);
+					const ddx=[-1,1,0,0];
+					const ddy=[0,0,-1,1];
+					for(var i=0;i<players.length;i++)if(players[i].alive){
+						while(players[i].queue.size()){
+							var now=players[i].queue.popFront();
+								var xx,yy;
+								if(now.length==3)xx=now[0]+ddx[now[2]%4],yy=now[1]+ddy[now[2]%4];
+								else xx=now[2],yy=now[3];
+								if(map[now[0]][now[1]][1]==i)
+									if(map[now[0]][now[1]][2]>1)
+										if(0<=xx&&xx<n&&0<=yy&&yy<m)
+											if(map[xx][yy][0]!=-1){
+												var val;
+												if((now.length==3&&now[2]<4)||(now.length==5&&now[4]==0))
+													val=map[now[0]][now[1]][2]-1;
+												else val=Math.floor(map[now[0]][now[1]][2]/2);
+												//console.log(map[xx][yy],val);
+												map[now[0]][now[1]][2]-=val;
+												if(map[xx][yy][1]==i){
+													if(map[xx][yy][0]!=3)map[xx][yy][2]+=val;
+													else map[now[0]][now[1]][2]+=val;
+												}else{
+													if(val>map[xx][yy][2]){
+														if(map[xx][yy][0]==2){
+															map[xx][yy][2]=val-map[xx][yy][2];
+															var dead=map[xx][yy][1];
+															if(players[dead].alive){
+																players[dead].alive=false;
+																dieturn[dieturn.length]=dead;
+																players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
+																players[dead].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 															}
-															else
-																map[xx][yy][2]-=val;
+															for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
+																map[x][y][1]=i;
+															map[xx][yy][0]=1;
+														}else if(map[xx][yy][0]!=3){
+															map[xx][yy][2]=val-map[xx][yy][2];
+															map[xx][yy][1]=i;
+														}else{
+															map[now[0]][now[1]][2]+=val-map[xx][yy][2];
+															map[xx][yy][2]=0;
+															map[xx][yy][1]=i;
 														}
-														break;
 													}
-								}
+													else
+														map[xx][yy][2]-=val;
+												}
+												break;
+											}
+						}
+					}
+					if(turn%2==1){
+						for(var i=0;i<n;i++)
+							for(var j=0;j<m;j++)
+								if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
+									map[i][j][2]++;
+								else if(map[i][j][0]==2)
+									map[i][j][2]++;
+						if((turn+1)%everyadd==0)
+							for(var i=0;i<n;i++)
+								for(var j=0;j<m;j++)
+									if(map[i][j][0]==0&&map[i][j][1]>=0)
+										map[i][j][2]++;
+					}
+					his[turn]=[];
+					for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
+						his[turn][his[turn].length]=[i,j,JSON.parse(JSON.stringify(map[i][j]))];
+					//console.log(his[turn]);
+					for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji){
+						players[i].alive=false,
+						players[i].guaji=true,
+						players[i].Delta-=200;
+						dieturn[dieturn.length]=i;
+					}
+					var nowalive=0;
+					for(var i=0;i<players.length;i++)
+						rank[i]=[0,0],nowalive+=players[i].alive;
+					for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]>=0&&map[i][j][1]>=0){
+						rank[map[i][j][1]][1]++;
+						rank[map[i][j][1]][0]+=map[i][j][2];
+					}
+					if(nowalive<=1){
+						var winner=-1;
+						var kk=Math.min(1,(players.length-1)/4);
+						if(type!='ffa')kk=0;
+						if(nowalive){
+							for(winner=0;winner<players.length;winner++)if(players[winner].alive){
+								dieturn[dieturn.length]=winner;break;
 							}
-							if(turn%2==1){
-								for(var i=0;i<n;i++)
-									for(var j=0;j<m;j++)
-										if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
-											map[i][j][2]++;
-										else if(map[i][j][0]==2)
-											map[i][j][2]++;
-								if((turn+1)%everyadd==0)
-									for(var i=0;i<n;i++)
-										for(var j=0;j<m;j++)
-											if(map[i][j][0]==0&&map[i][j][1]>=0)
-												map[i][j][2]++;
-							}
-							his[turn]=[];
-							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
-								his[turn][his[turn].length]=[i,j,JSON.parse(JSON.stringify(map[i][j]))];
-							//console.log(his[turn]);
-							for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji){
-								players[i].alive=false,
-								players[i].guaji=true,
-								players[i].Delta-=200;
-								dieturn[dieturn.length]=i;
-							}
-							var nowalive=0;
+						}
+						for(var i=0;i<players.length;i++)
+							players[dieturn[i]].rk=players.length-i;
+						if(players.length>1)
 							for(var i=0;i<players.length;i++)
-								rank[i]=[0,0],nowalive+=players[i].alive;
-							for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j][0]>=0&&map[i][j][1]>=0){
-								rank[map[i][j][1]][1]++;
-								rank[map[i][j][1]][0]+=map[i][j][2];
+								players[i].Delta+=200-300*(players[i].rk-1)/(players.length-1);
+						console.log(players);
+						for(var i=0;i<players.length;i++){
+							players[i].Delta=Math.floor((players[i].Delta)*kk);
+							var sql = 'UPDATE users SET rating = '+Math.max(1000,players[i].rating+players[i].Delta)+' WHERE id="'+players[i].uid+'"';
+							db.query(sql,(err,result)=>{
+								if(err){
+									console.error(err);
+								}
+							});
+						}
+						users=[];
+						for(var i=0;i<players.length;i++)
+							users[i]={
+								'uid':players[i].uid,
+								'name':players[i].name,
+								'vip':players[i].vip,
+								'rk':players[i].rk,
+								'rating':players[i].rating,
+								'delta':players[i].Delta,
+								'guaji':players[i].guaji
 							}
-							if(nowalive<=1){
-								var winner=-1;
-								var kk=Math.min(1,(players.length-1)/4);
-								if(type!='ffa')kk=0;
-								if(nowalive){
-									for(winner=0;winner<players.length;winner++)if(players[winner].alive){
-										dieturn[dieturn.length]=winner;break;
-									}
-								}
-								for(var i=0;i<players.length;i++)
-									players[dieturn[i]].rk=players.length-i;
-								if(players.length>1)
-									for(var i=0;i<players.length;i++)
-										players[i].Delta+=200-300*(players[i].rk-1)/(players.length-1);
-								console.log(players);
-								for(var i=0;i<players.length;i++){
-									players[i].Delta=Math.floor((players[i].Delta)*kk);
-									var sql = 'UPDATE users SET rating = '+Math.max(1000,players[i].rating+players[i].Delta)+' WHERE id="'+players[i].uid+'"';
-									db.query(sql,(err,result)=>{
-										if(err){
-											console.error(err);
-										}
-									});
-								}
-								users=[];
-								for(var i=0;i<players.length;i++)
-									users[i]={
-										'uid':players[i].uid,
-										'name':players[i].name,
-										'vip':players[i].vip,
-										'rk':players[i].rk,
-										'rating':players[i].rating,
-										'delta':players[i].Delta,
-										'guaji':players[i].guaji
-									}
-								var sql = 'INSERT INTO `games` (`type`,  `ver`,  `everyadd`,  `users`) VALUES (?, ?, ?, ?)';
-								db.query(sql,[type,2,everyadd,JSON.stringify(users)],(err,result)=>{
-									if(err){
-										console.error(err);
-									}else{
-										ws.connections.forEach((connection)=>{
-											connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner,'name':result.insertId}));
-										});
-										fs.writeFileSync(path.join(__dirname,'replay',result.insertId+'.json'),JSON.stringify(his))
-										start=false;
-										canjoin=true;
-										players=[];
-										map=[];
-										his=[];
-										turn=0;
-										rank=[];
-										users=[];
-										dieturn=[];
-										lst=-1;
-										clearInterval(timer);
-									}
-								});
+						var sql = 'INSERT INTO `games` (`type`,  `ver`,  `everyadd`,  `users`) VALUES (?, ?, ?, ?)';
+						db.query(sql,[type,2,everyadd,JSON.stringify(users)],(err,result)=>{
+							if(err){
+								console.error(err);
 							}else{
 								ws.connections.forEach((connection)=>{
-									connection.send(JSON.stringify({'typ':'new turn','turn':turn,'rank':rank}));
+									connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'winner':winner,'name':result.insertId}));
 								});
+								fs.writeFileSync(path.join(__dirname,'replay',result.insertId+'.json'),JSON.stringify(his))
+								start=false;
+								canjoin=true;
+								players=[];
+								map=[];
+								his=[];
+								turn=0;
+								rank=[];
+								users=[];
+								dieturn=[];
+								member=[[],[]];
+								lst=-1;
+								clearInterval(timer);
 							}
-						},eachturn);
-				},1000)
-			}
-		}
-		if(data.typ=='join game'){
-			if(canjoin){
-				//console.log(username,userid,vip,rating);
-				for(var i=0;i<players.length;i++)if(players[i].uid==userid)
-					{connection.close();return;}
-				players[players.length]={"name":username,"uid":userid,'vip':vip,'rating':parseInt(rating),'Delta':0,'guaji':false,'queue':new Deque(),'alive':true,'lstmap':[],'lstvis':0};
+						});
+					}else{
+						ws.connections.forEach((connection)=>{
+							connection.send(JSON.stringify({'typ':'new turn','turn':turn,'rank':rank}));
+						});
+					}
+				},eachturn);
 			}
 		}
 		if(data.typ=='get map'){
@@ -550,18 +594,32 @@ var ws=io.createServer(connection=>{
 					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
 			}
 		}
+		if(data.type=="join"){
+			quit();
+			join(data.team);
+			ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
+		}
+		if(data.type=="cancel"){
+			quit();
+			ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
+		}
 	})
 	connection.on("close", function (code, reason) {
 		console.log("Connection closed");
+		quit();
 		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
+		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
 	})
 	connection.on("error",() => {
 		console.log('服务异常关闭...');
+		quit();
 		if(lst!=ws.connections.length&&!start)lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
+		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
 	else lst=ws.connections.length,ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'new connection','cnt':lst}))});
 	connection.send(JSON.stringify({'typ':'type change','type':type}));
+	connection.send(JSON.stringify({'typ':'team change','member':member}));
 });
 ws.listen(3000)
 var server = app.listen(config.port)
