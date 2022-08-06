@@ -135,6 +135,9 @@
 					if(map[i][j][0]==-1){
 						now.style.background="#b3b3b3";
 						inner="<span class='mountain num visible'></span>";
+					}else if(map[i][j][0]==5){
+						now.style.background="#b3b3b3";
+						inner="<span class='toxins num visible'></span>";
 					}else if(map[i][j][0]==0){
 						if(map[i][j][1]>=0)now.style.background=color[map[i][j][1]];
 						else now.style.background="#d7d7d7";

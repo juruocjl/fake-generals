@@ -14,6 +14,8 @@ const genffa = require('./gen-ffa.js');
 const gensb = require('./gen-sb.js');
 const gendark = require('./gen-dark.js');
 const genteam = require('./gen-team.js');
+const gentoxins = require('./gen-toxins.js');
+const genyinjian = require('./gen-yinjian.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
 app.use(cookieParser())
@@ -362,6 +364,8 @@ var ws=io.createServer(connection=>{
 				if(type=="ffa")res=genffa.genMap(players.length);
 				if(type=="sb")res=gensb.genMap(players.length);
 				if(type=="dark")res=gendark.genMap(players.length);
+				if(type=="toxins")res=gentoxins.genMap(players.length);
+				if(type=="yinjian")res=genyinjian.genMap(players.length);
 				if(type=="team"){
 					var teams=[[],[]];
 					for(var i=0;i<players.length;i++)
@@ -411,7 +415,8 @@ var ws=io.createServer(connection=>{
 												else val=Math.floor(map[now[0]][now[1]][2]/2);
 												//console.log(map[xx][yy],val);
 												map[now[0]][now[1]][2]-=val;
-												if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
+												if(map[xx][yy][0]==5);
+												else if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
 													if(map[xx][yy][0]!=3){
 														map[xx][yy][2]+=val;
 														if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
@@ -451,9 +456,9 @@ var ws=io.createServer(connection=>{
 						for(var i=0;i<n;i++)
 							for(var j=0;j<m;j++)
 								if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
-									map[i][j][2]++;
+									map[i][j][2]+=1+(type=="yinjian"?4:0);
 								else if(map[i][j][0]==2)
-									map[i][j][2]++;
+									map[i][j][2]+=1+(type=="yinjian"?4:0);
 								else if(map[i][j][0]==4){
 									map[i][j][2]--;
 									if(map[i][j][2]<=0)
@@ -565,13 +570,13 @@ var ws=io.createServer(connection=>{
 				for(var i=0;i<n;i++){
 					for(var j=0;j<m;j++){
 						var flag=false,now;
-						var range=(type=="dark"&&map[i][j][0]!=2?0:1);
+						var range=((type=="dark"||type=="yinjian")&&map[i][j][0]!=2?0:1);
 						for(var dx=-range;dx<=range;dx++)for(var dy=-range;dy<=range;dy++)
 							if(0<=i+dx&&i+dx<n&&0<=j+dy&&j+dy<m&&map[i+dx][j+dy][0]>=0
 								&&map[i+dx][j+dy][1]>=0&&players[map[i+dx][j+dy][1]].team==players[id].team)
 								flag=true;
 						if(!flag){
-							if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")now=[-2];
+							if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark"||type=="yinjian")now=[-2];
 							else now=[-3];
 						}else now=JSON.parse(JSON.stringify(map[i][j]));
 						if(now.toString()!=players[id].lstmap[i][j].toString()){
@@ -616,7 +621,7 @@ var ws=io.createServer(connection=>{
 		if(data.typ=="type change"){
 			if(!start){
 				type=data.type;
-				if(type=="ffa"||type=="sb"||type=="dark"||type=="team")
+				if(type=="ffa"||type=="sb"||type=="dark"||type=="team"||type=="toxins"||type=="yinjian")
 					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
 			}
 		}
