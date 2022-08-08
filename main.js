@@ -275,6 +275,7 @@ function getCookie(cookie,cname) {
 	}
 	return "";
 }
+var nowuser=[];
 var ws=io.createServer(connection=>{
 	console.log('new connection...');
 	var userid=getCookie(connection.headers.cookie,"userid");
@@ -296,6 +297,11 @@ var ws=io.createServer(connection=>{
 			console.log(username,vip);
 		}
 	});
+	if(nowuser.indexOf(userid)!=-1){
+		connection.close();
+		return;
+	}
+	nowuser.push(userid);
 	var quit=()=>{
 		for(var i=0;i<member[0].length;i++)if(member[0][i].uid==userid)member[0].splice(i,1);
 		for(var i=0;i<member[1].length;i++)if(member[1][i].uid==userid)member[1].splice(i,1);
@@ -639,11 +645,15 @@ var ws=io.createServer(connection=>{
 		console.log("Connection closed");
 		quit();
 		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
+		if(nowuser.indexOf(userid)!=-1)
+			nowuser.splice(nowuser.indexOf(userid));
 	})
 	connection.on("error",() => {
 		console.log('服务异常关闭...');
 		quit();
 		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
+		if(nowuser.indexOf(userid)!=-1)
+			nowuser.splice(nowuser.indexOf(userid));
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
 	connection.send(JSON.stringify({'typ':'type change','type':type}));
