@@ -18,6 +18,7 @@ const gentoxins = require('./gen-toxins.js');
 const genyinjian = require('./gen-yinjian.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
+
 app.use(cookieParser())
 app.use(bp.urlencoded({extended:false}));
 app.use(session({
@@ -50,7 +51,7 @@ app.get('/', function (req,res) {
 				res.cookie('pswd',result[0].pswd,{maxAge:114514*24*60*60*1000})
 				res.cookie('rating',result[0].rating,{maxAge:114514*24*60*60*1000})
 				res.cookie('vip',calcvip(result[0].donation),{maxAge:114514*24*60*60*1000});
-				res.sendFile(path.join(__dirname,"index.html"));
+				res.sendFile(path.join(__dirname,"dist","index.html"));
 			}
 		});
 	}else{
@@ -59,9 +60,6 @@ app.get('/', function (req,res) {
 })
 app.get('/replay', function (req,res) {
    res.sendFile(path.join(__dirname,"replay.html"));
-})
-app.get('/forkme_right_darkblue_121621.png', function (req,res) {
-   res.sendFile(path.join(__dirname,"/forkme_right_darkblue_121621.png"));
 })
 app.get('/main.css', function (req,res) {
    res.sendFile(path.join(__dirname,"main.css"));
@@ -215,6 +213,7 @@ app.get('/qry',function(req,res){
 		res.send(html);
 	});
 });
+app.use(express.static(__dirname + '/dist'));
 const wyh="1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
 function randstr(len){
 	var str="";
@@ -311,7 +310,7 @@ var ws=io.createServer(connection=>{
 	}
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
-		//console.log(data);
+		console.log(data);
 		if(data.typ=='startgame'){
 			if(!start&&member[0].length+member[1].length>1){
 				start=true;
