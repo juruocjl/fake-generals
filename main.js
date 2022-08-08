@@ -214,13 +214,6 @@ app.get('/qry',function(req,res){
 	});
 });
 app.use(express.static(__dirname + '/dist'));
-const wyh="1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
-function randstr(len){
-	var str="";
-	for(var i=0;i<len;i++)
-		str+=wyh[Math.floor(Math.random()*wyh.length)];
-	return str;
-}
 const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {
@@ -265,6 +258,7 @@ function pred(Map,val,add){
 	return Map;
 }
 function getCookie(cookie,cname) {
+	if(!cookie)return "";
 	var name = cname + "=";
 	var ca = cookie.split(';');
 	for (var i = 0; i < ca.length; i++) {
@@ -287,7 +281,7 @@ var ws=io.createServer(connection=>{
 	db.query(sql,(err,result)=>{
 		if(err){
 			console.error(err);
-			return;
+			connection.close();
 		}else if(result.length==0||result[0].pswd!=pswd||result[0].name!=username||result[0].rating!=rating){
 			console.log('pswd or username or rating err');
 			connection.close();
@@ -387,12 +381,12 @@ var ws=io.createServer(connection=>{
 					for(var j=0;j<n;j++){
 						players[i].lstmap[j]=[];
 						for(var k=0;k<m;k++)
-							if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark")
+							if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark"||type=="yinjian")
 								players[i].lstmap[j][k]=[-2];
 							else players[i].lstmap[j][k]=[-3];
 					}
 				for(var i=0;i<n;i++)for(var j=0;j<m;j++)
-					if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")firstmap+="0";
+					if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark"||type=="yinjian")firstmap+="0";
 					else firstmap+="1";
 				ws.connections.forEach((connection)=>{
 					connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
@@ -413,7 +407,9 @@ var ws=io.createServer(connection=>{
 								if(map[now[0]][now[1]][1]==i)
 									if(map[now[0]][now[1]][2]>1)
 										if(0<=xx&&xx<n&&0<=yy&&yy<m)
-											if(map[xx][yy][0]!=-1){
+											if(map[xx][yy][0]!=-1&&
+												!(map[xx][yy][0]==3&&map[xx][yy][1]>=0&&
+												players[map[xx][yy][1]].team==players[i].team)){
 												var val;
 												if((now.length==3&&now[2]<4)||(now.length==5&&now[4]==0))
 													val=map[now[0]][now[1]][2]-1;
@@ -422,11 +418,8 @@ var ws=io.createServer(connection=>{
 												map[now[0]][now[1]][2]-=val;
 												if(map[xx][yy][0]==5);
 												else if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
-													if(map[xx][yy][0]!=3){
-														map[xx][yy][2]+=val;
-														if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
-													}
-													else map[now[0]][now[1]][2]+=val;
+													map[xx][yy][2]+=val;
+													if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
 												}else{
 													if(val>map[xx][yy][2]){
 														if(map[xx][yy][0]==2){

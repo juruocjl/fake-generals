@@ -51,6 +51,7 @@ let map=ref([]);
 let turn=ref('?');
 let type=ref();
 let member=ref([[],[]]);
+let size=ref(30);
 let vis=computed(()=>{
 	var arr=[];
 	for(var i=0;i<n.value;i++){
@@ -68,8 +69,8 @@ watch(type, (newtype) => {
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
 	if(!add)return Map;
-	for(var i=0;i<n;i++)
-		for(var j=0;j<m;j++){
+	for(var i=0;i<n.value;i++)
+		for(var j=0;j<m.value;j++){
 			if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
 				if(Map[i][j][0]==0)Map[i][j][2]+=val;
 				else if(Map[i][j][0]!=4)Map[i][j][2]++;
@@ -81,68 +82,20 @@ function pred(Map,val,add){
 		}
 	return Map;
 }
-function show(){
-	for(var i=0;i<n;i++){
-		var line = $('.map >tr[data='+i+']')
-		for(var j=0;j<m;j++){
-			var now=line.children('td')[j];
-			var inner;
-			if(map[i][j][0]==-2){
-				now.style.background="#565656";
-				inner="<span class='num'></span>";
-			}else if(map[i][j][0]==-3){
-				now.style.background="#565656";
-				inner="<span class='unknow num'></span>";
-			}else{
-				if(map[i][j][0]==-1){
-					now.style.background="#b3b3b3";
-					inner="<span class='mountain num visible'></span>";
-				}else if(map[i][j][0]==5){
-					now.style.background="#b3b3b3";
-					inner="<span class='toxins num visible'></span>";
-				}else if(map[i][j][0]==0){
-					if(map[i][j][1]>=0)now.style.background=color[map[i][j][1]];
-					else now.style.background="#d7d7d7";
-					if(map[i][j][2])inner="<span class='empty num visible'>"+map[i][j][2]+"</span>";
-					else inner="<span class='empty num visible'></span>";;
-				}else if(map[i][j][0]==1){
-					if(map[i][j][1]>=0)now.style.background=color[map[i][j][1]];
-					else now.style.background="#757575";
-					if(map[i][j][2])inner="<span class='town num visible'>"+map[i][j][2]+"</span>";
-					else inner="<span class='town num visible'></span>";;
-				}else if(map[i][j][0]==2){
-					now.style.background=color[map[i][j][1]];
-					if(map[i][j][2])inner="<span class='crown num visible'>"+map[i][j][2]+"</span>";
-					else inner="<span class='crown num visible'></span>";
-				}else if(map[i][j][0]==3){
-					if(map[i][j][1]>=0)now.style.background=color[map[i][j][1]];
-					else now.style.background="#757575";
-					if(map[i][j][2])inner="<span class='umbrella num visible'>"+map[i][j][2]+"</span>";
-					else inner="<span class='umbrella num visible'></span>";
-				}else if(map[i][j][0]==4){
-					if(map[i][j][1]>=0)now.style.background=color[map[i][j][1]];
-					else now.style.background="#757575";
-					if(map[i][j][2])inner="<span class='water num visible'>"+map[i][j][2]+"</span>";
-					else inner="<span class='water num visible'></span>";
-				}
-			}
-			if(vis[i][j][0])inner+="<span class='up'></span>";
-			if(vis[i][j][1])inner+="<span class='down'></span>";
-			if(vis[i][j][2])inner+="<span class='left'></span>";
-			if(vis[i][j][3])inner+="<span class='right'></span>";
-			if(now.innerHTML!=inner)now.innerHTML=inner;
-			if(i==nowx&&j==nowy){
-				now.classList.add("nowpos");
-				if(op)now.firstChild.innerHTML="50%";
-			}
-			else now.classList.remove("nowpos");
-		}
+function bgcolor(i,j){
+	if(map.value[i][j][0]==-2||map.value[i][j][0]==-3)return "#565656";
+	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#b3b3b3";
+	if(map.value[i][j][0]==0){
+		if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
+		else return "#d7d7d7";
 	}
-};
+	if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
+	else return "#757575";
+}
 let rank = ref([]);
 let players=computed(()=>{
 	var arr=[];
-	for(var i=0;i<userlist.value.length;i++)
+	for(var i=0;i<rank.value.length;i++)
 		if(userlist.value[i].vip==0)
 			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating),'color':color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
 		else
@@ -157,10 +110,10 @@ let players=computed(()=>{
 function setnow(a,b){
 	if(nowx.value!=-1&&nowy.value!=-1&&Math.abs(nowx.value-a)+Math.abs(nowy.value-b)==1){
 		var d;
-		if(a==now.value-1)d=0;
-		if(a==now.value+1)d=1;
-		if(b==now.value-1)d=2;
-		if(b==now.value+1)d=3;
+		if(a==nowx.value-1)d=0;
+		if(a==nowx.value+1)d=1;
+		if(b==nowy.value-1)d=2;
+		if(b==nowy.value+1)d=3;
 		Q.value.addBack([nowx.value,nowy.value,d]);
 		ws.send(JSON.stringify({'typ':'add queue','data':[nowx.value,nowy.value,op.value*4+d]}))
 		nowx.value=a,
@@ -177,11 +130,11 @@ function setnow(a,b){
 }
 document.onkeydown=function(event){
       var e = event || window.event || arguments.callee.caller.arguments[0];
-      if(e && e.keyCode==32)nowx=nowy=-1,show();
-      if(e && e.keyCode==87)if(nowx!=-1&&nowx>0)setnow(nowx-1,nowy);
-      if(e && e.keyCode==83)if(nowx!=-1&&nowx+1<n)setnow(nowx+1,nowy);
-      if(e && e.keyCode==65)if(nowy!=-1&&nowy>0)setnow(nowx,nowy-1);
-      if(e && e.keyCode==68)if(nowy!=-1&&nowy+1<m)setnow(nowx,nowy+1);
+      if(e && e.keyCode==32)nowx.value=nowy.value=-1,show();
+      if(e && e.keyCode==87)if(nowx.value!=-1&&nowx.value>0)setnow(nowx.value-1,nowy.value);
+      if(e && e.keyCode==83)if(nowx.value!=-1&&nowx.value+1<n.value)setnow(nowx.value+1,nowy.value);
+      if(e && e.keyCode==65)if(nowy.value!=-1&&nowy.value>0)setnow(nowx.value,nowy.value-1);
+      if(e && e.keyCode==68)if(nowy.value!=-1&&nowy.value+1<m.value)setnow(nowx.value,nowy.value+1);
       if(e && e.keyCode==69){
 	    if(Q.value.size()){
 			var lst=Q.value.popBack();
@@ -210,7 +163,32 @@ document.onkeydown=function(event){
 		$('#bxbx').click(()=>{$('.gameend').css('display','none');});
    }
 };
-
+function moused(e1) {
+	var drag = document.getElementById("map");
+	var x1 = e1.clientX;
+	var y1 = e1.clientY;
+	var l1 = drag.offsetLeft;
+	var t1 = drag.offsetTop;
+	window.onmousemove = function(e2) {
+		var x2 = e2.clientX;
+		var y2 = e2.clientY;
+		var l2 = l1 + (x2 - x1);
+		var t2 = t1 + (y2 - y1);
+		drag.style.left = l2 + 'px';
+		drag.style.top = t2 + 'px';
+	}
+}
+function mouseu() {
+	window.onmousemove = null;
+}
+function mousew(e){
+	if(e.deltaY<0){
+		size.value=Math.min(50,size.value+3);
+	}else if(e.deltaY>0){
+		size.value=Math.max(25,size.value-3);
+	}
+}
+document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 ws.onmessage = (evt)=>{
 	var data = JSON.parse(evt.data);
 	if (data.typ == 'already start'){
@@ -236,11 +214,8 @@ ws.onmessage = (evt)=>{
 		notinit=false;
 		for(var i=0;i<n.value;i++){
 			map.value[i]=[];
-			for(var j=0;j<m.value;j++){
-				map.value[i][j]=[-2];
-				if(data.firstmap[i*m+j]=="1")
-					map.value[i][j]=[-3];
-			}
+			for(var j=0;j<m.value;j++)
+				map.value[i][j]=data.firstmap[i*m.value+j]=="1"?[-3]:[-2];
 		}
 	}
 	if(data.typ=='new turn'){
@@ -274,32 +249,30 @@ ws.onmessage = (evt)=>{
 	</a>
 	<div class="index" v-if="!start">
 		<div class="contain">
-		<div class="name" v-html="showname(user,rating)"></div>
-		<div>当前rating为<span v-html="showname(rating,rating)"></span></div><br>
-		<button @click="ws.send(JSON.stringify({'typ': 'startgame'}));">Start!</button><br>
-		<input type="radio" v-model="type" name="gametype" value="ffa">FFA(rated)<br>
-		<input type="radio" v-model="type" name="gametype" value="sb">伞兵大战<br>
-		<input type="radio" v-model="type" name="gametype" value="dark">浓雾模式<br>
-		<input type="radio" v-model="type" name="gametype" value="toxins">掉坑模式<br>
-		<input type="radio" v-model="type" name="gametype" value="yinjian">阴间模式<br>
-		<input type="radio" v-model="type" name="gametype" value="team">团队模式<br>
-		<div style="display: flex;">
-			<span>
-				<div class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':0}));">team1</div>
-				<div id="team1name" class="teamname">
-				<div v-for="user in member[0]">{{user.name}}</div>
-				</div>
-			</span>
-			<span>
-				<div class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':1}));">team2</div>
-				<div id="team2name" class="teamname">
-				<div v-for="user in member[1]">{{user.name}}</div>
-				</div>
-			</span>
-			<span>
-				<div id="cancel" class="teamchoose" @click="ws.send(JSON.stringify({'type':'cancel'}));">cancel</div>
-			</span>
-		</div>
+			<div class="name" v-html="showname(user,rating)"></div>
+			<div>当前rating为<span v-html="showname(rating,rating)"></span></div>
+			<el-button-group style="margin:10px;">
+			<el-button style="margin:10px;" type="success" plain @click="ws.send(JSON.stringify({'typ': 'startgame'}));">Start!</el-button>
+			</el-button-group><br>
+			<el-radio-group style="margin:10px;" v-model="type" size="middle">
+				<el-radio-button label="ffa">FFA(rated)</el-radio-button>
+				<el-radio-button label="sb">伞兵大战</el-radio-button>
+				<el-radio-button label="dark">浓雾模式</el-radio-button>
+				<el-radio-button label="toxins">掉坑模式</el-radio-button>
+				<el-radio-button label="yinjian">阴间模式</el-radio-button>
+				<el-radio-button label="team">团队模式</el-radio-button>
+			</el-radio-group><br>
+			<el-button-group style="margin:10px;">
+				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':0}));">
+					team1
+				</el-button>
+				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':1}));">
+					team2
+				</el-button>
+				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'cancel'}));">cancel</el-button>
+			</el-button-group><br>
+			<div v-for="user in member[0]">{{user.name}}</div>
+			<div v-for="user in member[1]">{{user.name}}</div>
 		</div>
 	</div>
 	<div class="gameend" style="display:none">
@@ -338,8 +311,28 @@ ws.onmessage = (evt)=>{
 	<div class="notice" v-if="nowwin!='none'&&!start">
 		<iframe v-bind:src="nowwin" style="height:100%;width:100%;"></iframe>
 	</div>
-	<table cellspacing="0" cellpadding="0" border="0" v-if="start">
-		 <tbody class="map">
+	<table cellspacing="0" cellpadding="0" border="0" v-if="start" v-bind:style="{'--size':size+'px','font-size':Math.min(18,Math.floor((now+32)/5))+'px'}">
+		 <tbody class="map" id="map" @mousedown="moused" @mouseup="mouseu" @mousewheel="mousew">
+		 	<tr v-for="i in n">
+				<td v-for="j in m" v-bind:style="{background:bgcolor(i-1,j-1)}" v-bind:class="{cell:true,nowpos:nowx==i-1&&nowy==j-1}" @click="setnow(i-1,j-1)">
+					<span v-bind:class="{
+						num:true,
+						unknow:map[i-1][j-1][0]==-3,
+						visible:map[i-1][j-1][0]!=-2&&map[i-1][j-1][0]!=-3,
+						mountain:map[i-1][j-1][0]==-1,
+						toxins:map[i-1][j-1][0]==5,
+						empty:map[i-1][j-1][0]==0,
+						town:map[i-1][j-1][0]==1,
+						crown:map[i-1][j-1][0]==2,
+						umbrella:map[i-1][j-1][0]==3,
+						water:map[i-1][j-1][0]==4
+					}">{{nowx==i-1&&nowy==j-1&&op==1?"50%":(map[i-1][j-1][2]?map[i-1][j-1][2]:"")}}</span>
+					<span class='up' v-if="vis[i-1][j-1][0]"></span>
+					<span class='down' v-if="vis[i-1][j-1][1]"></span>
+					<span class='left' v-if="vis[i-1][j-1][2]"></span>
+					<span class='right' v-if="vis[i-1][j-1][3]"></span>
+				</td>
+			</tr>
 		 </tbody>
 	</table>
 </template>
