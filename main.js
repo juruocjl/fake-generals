@@ -59,7 +59,7 @@ app.get('/', function (req,res) {
 	}
 })
 app.get('/replay', function (req,res) {
-   res.sendFile(path.join(__dirname,"replay.html"));
+   res.sendFile(path.join(__dirname,"front","dist","replay.html"));
 })
 app.get('/main.css', function (req,res) {
    res.sendFile(path.join(__dirname,"main.css"));
