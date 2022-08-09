@@ -51,7 +51,7 @@ app.get('/', function (req,res) {
 				res.cookie('pswd',result[0].pswd,{maxAge:114514*24*60*60*1000})
 				res.cookie('rating',result[0].rating,{maxAge:114514*24*60*60*1000})
 				res.cookie('vip',calcvip(result[0].donation),{maxAge:114514*24*60*60*1000});
-				res.sendFile(path.join(__dirname,"dist","index.html"));
+				res.sendFile(path.join(__dirname,"front","dist","index.html"));
 			}
 		});
 	}else{
@@ -213,7 +213,7 @@ app.get('/qry',function(req,res){
 		res.send(html);
 	});
 });
-app.use(express.static(__dirname + '/dist'));
+app.use(express.static(path.join(__dirname,'front','dist')));
 const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {

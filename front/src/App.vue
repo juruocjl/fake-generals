@@ -295,16 +295,16 @@ ws.onmessage = (evt)=>{
 	</tbody></table>
 	</div>
 	<div class="toolcontain" v-if="!start">
-		<div class="outer" id="showsearch" @click="nowwin=nowwin=='none'?'qry?name=1':'none'">
+		<div class="outer" id="showsearch" @click="nowwin=nowwin!='qry?name=1'?'qry?name=1':'none'">
 			<div class="search"></div>
 		</div><br>
-		<div class="outer" id="showinfo" @click="nowwin=nowwin=='none'?'info':'none'">
+		<div class="outer" id="showinfo" @click="nowwin=nowwin!='infos'?'infos':'none'">
 			<div class="infos"></div>
 		</div><br>
-		<div class="outer" id="showdrank" @click="nowwin=nowwin=='none'?'donationrk':'none'">
+		<div class="outer" id="showdrank" @click="nowwin=nowwin!='donationrk'?'donationrk':'none'">
 			<div class="donationrk"></div>
 		</div><br>
-		<div class="outer" id="showrank" @click="nowwin=nowwin=='none'?'ratingrk':'none'">
+		<div class="outer" id="showrank" @click="nowwin=nowwin!='ratingrk'?'ratingrk':'none'">
 			<div class="ranking"></div>
 		</div>
 	</div>
