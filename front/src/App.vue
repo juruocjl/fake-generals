@@ -261,7 +261,7 @@ ws.onmessage = (evt)=>{
 		ws.close();
 		map.value=data.lstmap;
 		rank.value=data.lstrank;
-		axios.get('/qry?name='+data.name).then(function (response) {
+		axios.get('/qry?name='+data.name).then((response)=>{
 			// handle success
 			ElMessageBox.alert(
 				response.data,
@@ -270,7 +270,7 @@ ws.onmessage = (evt)=>{
 					dangerouslyUseHTMLString: true,
 				}
 			)
-		}).catch(function (error) {
+		}).catch((error)=>{
 			console.log(error);
 		})
 	}

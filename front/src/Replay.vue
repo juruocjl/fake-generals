@@ -32,9 +32,18 @@ class Deque {
 const color=["red","blue","green","purple","brown","orange","pink"];
 let userlist=ref([]);
 let n=ref(0),m=ref(0);
-let map=ref([]);
-let turn=ref('?');
 let size=ref(30);
+let name=ref("");
+function getQueryVariable(variable){
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i=0;i<vars.length;i++) {
+        var pair = vars[i].split("=");
+        if(pair[0] == variable){return pair[1];}
+    }
+    return(false);
+}
+if(getQueryVariable('name'))name.value=getQueryVariable('name');
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
 	if(!add)return Map;
@@ -61,7 +70,19 @@ function bgcolor(i,j){
 	if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
 	else return "#757575";
 }
-let rank = ref([]);
+var maps=[];
+let ver = ref(0);
+let turn = ref(0);
+let map=computed(()=>{return maps[turn.value];})
+let rank = computed(()=>{
+	var arr=[];
+	for(var i=0;i<userlist.value.length;i++)arr[i]=[0,0];
+	for(var i=0;i<n.value;i++)for(var j=0;j<m.value;j++)if(map.value[i][j][0]>=0&&map.value[i][j][1]>=0){
+		arr[map.value[i][j][1]][1]++;
+		arr[map.value[i][j][1]][0]+=map.value[i][j][2];
+	}
+	return arr;
+});
 let players=computed(()=>{
 	var arr=[];
 	for(var i=0;i<rank.value.length;i++)
@@ -106,7 +127,35 @@ function mousew(e){
 	}
 }
 document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
-let name=ref("");
+
+function Start(){
+	axios.get('getfile?name='+name.value).then((response)=>{
+		if(response.data=="Not Found"){
+			ElMessage.error('Not Found.')
+		}else{
+			start.value=true;
+			var data=response.data;
+			n.value=data.his[0].length;
+			m.value=data.his[0][0].length;
+			userlist.value=data.users;
+			var cnt=data.his.length;
+			maps[0]=data.his[0];
+			var everyadd=data.everyadd;
+			for(var i=1;i<data.his.length;i++){
+				maps[i]=pred(maps[i-1],(i+1)%everyadd==0,(data.ver>=2)?i%2==1:true);
+				data.his[i].forEach((x)=>{maps[i][x[0]][x[1]]=x[2];});
+			}
+			ver.value=data.ver;
+			document.onkeydown=function(event){
+			   var e = event || window.event || arguments.callee.caller.arguments[0];
+			   if(e && e.keyCode==65)turn.value=Math.max(0,turn.value-1);
+			   if(e && e.keyCode==68)turn.value=Math.min(cnt-1,turn.value+1);
+		   };
+		}
+	}).catch((error)=>{
+		console.log(error);
+	})
+}
 </script>
 
 <template>
@@ -118,12 +167,13 @@ let name=ref("");
 			<el-input
 				v-model="name"
 				class="w-50 m-2"
-				placeholder="Type something"
-				:prefix-icon="Search"
+				placeholder="回放id"
 			/>
+			<el-button style="margin:10px;" type="success" plain @click="Start();">Start!</el-button>
+
 		</div>
 	</div>
-	<div class="turn">turn <span id="turn">{{turn}}</span></div>
+	<div class="turn">turn <span id="turn">{{ver>=2?Math.ceil(turn/2):turn}}</span></div>
 	<div class="rank">
 	<table><tbody id="rank">
 		<tr>

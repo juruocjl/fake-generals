@@ -104,10 +104,10 @@ app.get('/donationrk', function (req,res){
 			return;
 		}else{
 			//console.log(result);
-			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
+			var html='<h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
 			for(var i=0;i<result.length;i++)
 				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td></tr>';
-			html+='</tbody></table></body></html>';
+			html+='</tbody></table>';
 			res.send(html);
 		}
 	});
@@ -120,10 +120,10 @@ app.get('/ratingrk', function (req,res){
 			return;
 		}else{
 			//console.log(result);
-			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>分数</th></tr>';
+			var html='<h1>rating榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>分数</th></tr>';
 			for(var i=0;i<result.length;i++)
 				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td><td>'+result[i].rating+'</td></tr>';
-			html+='</tbody></table></body></html>';
+			html+='</tbody></table>';
 			res.send(html);
 		}
 	});
