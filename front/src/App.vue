@@ -1,5 +1,9 @@
 <script setup>
 import { ref ,computed, watch } from 'vue'
+import { useDark, useToggle } from '@vueuse/core'
+import axios from 'axios'
+const isDark = useDark()
+const toggleDark = useToggle(isDark)
 let start = ref(false);
 let nowwin = ref("none");
 function showname(name,rating){
@@ -157,10 +161,26 @@ document.onkeydown=function(event){
 			nowx.value=ums[i][0],nowy.value=ums[i][1],
 			setnow(tmpx,tmpy);
    }if(e && e.keyCode==27){
-		$('.gameend').css('display','block');
-		$('.gameend').html('是否投降<br><br><button id="okok">确定</button> <button id="bxbx">取消</button>');
-		$('#okok').click(()=>{$('.gameend').css('display','none');ws.send(JSON.stringify({'typ':'surrender'}))});
-		$('#bxbx').click(()=>{$('.gameend').css('display','none');});
+		ElMessageBox.confirm(
+			'是否投降？',
+			'Warning',
+			{
+				confirmButtonText: 'OK',
+				cancelButtonText: 'Cancel',
+				type: 'warning',
+			}
+		).then(() => {
+			ws.send(JSON.stringify({'typ':'surrender'}));
+			ElMessage({
+				type: 'success',
+				message: '已投降',
+			})
+		}).catch(() => {
+			ElMessage({
+				type: 'info',
+				message: '取消投降',
+			})
+		})
    }
 };
 function moused(e1) {
@@ -187,6 +207,11 @@ function mousew(e){
 	}else if(e.deltaY>0){
 		size.value=Math.max(25,size.value-3);
 	}
+}
+function members(i){
+	var str="";
+	member.value[i].forEach((x)=>{str=str+x.name+'<br>';});
+	return str;
 }
 document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 ws.onmessage = (evt)=>{
@@ -236,9 +261,18 @@ ws.onmessage = (evt)=>{
 		ws.close();
 		map.value=data.lstmap;
 		rank.value=data.lstrank;
-		$('.gameend').css('display','block');
-		$('.gameend').html('<iframe src="qry?name='+data.name+'" style="height:400px;"></iframe><br><button id="okok">ok</button>');
-		$('#okok').click(()=>{$('.gameend').css('display','none');});
+		axios.get('/qry?name='+data.name).then(function (response) {
+			// handle success
+			ElMessageBox.alert(
+				response.data,
+				'游戏结束',
+				{
+					dangerouslyUseHTMLString: true,
+				}
+			)
+		}).catch(function (error) {
+			console.log(error);
+		})
 	}
 };
 </script>
@@ -252,6 +286,11 @@ ws.onmessage = (evt)=>{
 			<div class="name" v-html="showname(user,rating)"></div>
 			<div>当前rating为<span v-html="showname(rating,rating)"></span></div>
 			<el-button-group style="margin:10px;">
+			<el-button style="margin:10px;" type="info" plain @click="toggleDark()">
+        		{{isDark}}
+     		</el-button>
+			</el-button-group><br>
+			<el-button-group style="margin:10px;">
 			<el-button style="margin:10px;" type="success" plain @click="ws.send(JSON.stringify({'typ': 'startgame'}));">Start!</el-button>
 			</el-button-group><br>
 			<el-radio-group style="margin:10px;" v-model="type" size="middle">
@@ -263,19 +302,19 @@ ws.onmessage = (evt)=>{
 				<el-radio-button label="team">团队模式</el-radio-button>
 			</el-radio-group><br>
 			<el-button-group style="margin:10px;">
-				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':0}));">
-					team1
-				</el-button>
-				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':1}));">
-					team2
-				</el-button>
+				<el-tooltip v-bind:content="members(0)" placement="bottom" raw-content>
+					<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':0}));">
+						team1
+					</el-button>
+				</el-tooltip>
+				<el-tooltip v-bind:content="members(1)" placement="bottom" raw-content>
+					<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':1}));">
+						team2
+					</el-button>
+				</el-tooltip>
 				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'cancel'}));">cancel</el-button>
-			</el-button-group><br>
-			<div v-for="user in member[0]">{{user.name}}</div>
-			<div v-for="user in member[1]">{{user.name}}</div>
+			</el-button-group>
 		</div>
-	</div>
-	<div class="gameend" style="display:none">
 	</div>
 	<div class="turn">turn <span id="turn">{{turn}}</span></div>
 	<div class="rank">
