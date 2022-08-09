@@ -33,7 +33,7 @@ var db = mysql.createConnection({
 db.connect();
 function fail(title,text){return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';}
 function calcvip(donate){if(donate>25)return 3;if(donate>10)return 2;if(donate>0)return 1;return 0;}
-var infos=md.render('# 操作说明\n'+fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
+var infos=md.render(fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
 app.get('/', function (req,res) {
 	//console.log(req.session.userid,req.session.pswd)
 	if(req.session.userid&&req.session.pswd){
@@ -100,15 +100,14 @@ app.get('/donationrk', function (req,res){
 	var sql='SELECT * from users WHERE donation>0 ORDER BY donation DESC LIMIT 20';
 	db.query(sql,(err,result)=>{
 		if(err){
-			res.send(fail('查询失败',err.message));
-			return;
+			res.send({'status':'err'});
 		}else{
-			//console.log(result);
-			var html='<h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
+			var arr=[];
 			for(var i=0;i<result.length;i++)
-				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td></tr>';
-			html+='</tbody></table>';
-			res.send(html);
+				arr.push({
+					name:showname(result[i].name,result[i].rating)+"<i class='vip"+calcvip(result[i].donation)+"'/>"
+				});
+			res.send(JSON.stringify({'status':'success','data':arr}));
 		}
 	});
 });
@@ -116,20 +115,21 @@ app.get('/ratingrk', function (req,res){
 	var sql='SELECT * from users ORDER BY rating DESC LIMIT 20';
 	db.query(sql,(err,result)=>{
 		if(err){
-			res.send(fail('查询失败',err.message));
-			return;
+			res.send({'status':'err'});
 		}else{
 			//console.log(result);
-			var html='<h1>rating榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>分数</th></tr>';
+			var arr=[];
 			for(var i=0;i<result.length;i++)
-				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td><td>'+result[i].rating+'</td></tr>';
-			html+='</tbody></table>';
-			res.send(html);
+				arr.push({
+					name:showname(result[i].name,result[i].rating)+"<i class='vip"+calcvip(result[i].donation)+"'/>",
+					rating:showname(result[i].rating,result[i].rating)
+				});
+			res.send(JSON.stringify({'status':'success','data':arr}));
 		}
 	});
 });
 app.get('/infos',function(req,res){
-	res.send(infos);
+	res.send(JSON.stringify({'status':"success","data":infos}));
 })
 app.post('/submit',function(req,res){
     //console.log(req.body);
@@ -195,21 +195,22 @@ app.post('/submit',function(req,res){
 app.get('/qry',function(req,res){
 	var sql='SELECT users from games WHERE id='+req.query.name;
 	db.query(sql,(err,result)=>{
-		var html='<h1>rating变化查询</h1><input id="name" value="'+req.query.name+'"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button> <a href="replay?name='+req.query.name+'" target="_blank">回放</a><br>';
-		if(err)html+="查询失败 "+err;
+		if(err)res.send(JSON.stringify({'status':'err','data':'err'}));
 		else if(result.length){
-			html+='<table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>△</th><th>变化</th></tr>';
+			var arr=[];
 			var users=JSON.parse(result[0].users);
 			users.sort((A,B)=>{return A.rk-B.rk;});
 			//console.log(users);
 			for(var i=0;i<users.length;i++){
 				var O=parseInt(users[i].rating),N=O+parseInt(users[i].delta);
-				html+='<tr><td>'+(i+1)+'</td><td>'+users[i].name+' <i class="vip'+users[i].vip+'"></i></td><td>'+users[i].delta+'</td><td>'
-				+showname(O,O)+' → '+showname(N,N)+'</td></tr>';
+				arr.push({
+					name:users[i].name+' <i class="vip'+users[i].vip+'"/>',
+					delta:users[i].delta,
+					change:showname(O,O)+' → '+showname(N,N)
+				})
 			}
-			html+='</tbody></table>';
-		}else html+='未找到';
-		res.send(html);
+			res.send(JSON.stringify({'status':'success','data':arr}));
+		}else res.send(JSON.stringify({'status':'err','data':'Not Found'}));
 	});
 });
 app.use(express.static(path.join(__dirname,'front','dist')));
@@ -303,7 +304,7 @@ var ws=io.createServer(connection=>{
 	}
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
-		console.log(data);
+		//console.log(data);
 		if(data.typ=='startgame'){
 			if(!start&&member[0].length+member[1].length>1){
 				start=true;

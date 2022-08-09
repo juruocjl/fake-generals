@@ -56,6 +56,43 @@ let turn=ref('?');
 let type=ref();
 let member=ref([[],[]]);
 let size=ref(30);
+let ranking=ref(false);
+let ranking_content=ref({});
+function showrank(){
+	ranking.value=true;
+	axios.get('ratingrk').then((response)=>{
+		if(response.data.status=="success")
+			ranking_content.value=response.data.data;
+	})
+}
+let dranking=ref(false);
+let dranking_content=ref({});
+function showdrank(){
+	dranking.value=true;
+	axios.get('donationrk').then((response)=>{
+		if(response.data.status=="success")
+			dranking_content.value=response.data.data;
+	})
+}
+let infos=ref(false);
+let infos_content=ref({});
+function showinfo(){
+	infos.value=true;
+	axios.get('infos').then((response)=>{
+		infos_content.value=response.data.data;
+	})
+}
+let qrating=ref(false);
+let qrating_content=ref({status:'err','data':'?'});
+function showqrating(){
+	qrating.value=true;
+}
+let name=ref(0);
+function handleChange(value){
+  axios.get('qry?name='+value).then((response)=>{
+		qrating_content.value=response.data;
+	})
+}
 let vis=computed(()=>{
 	var arr=[];
 	for(var i=0;i<n.value;i++){
@@ -133,25 +170,25 @@ function setnow(a,b){
 	}else nowx.value=a,nowy.value=b,op.value=0;
 }
 document.onkeydown=function(event){
-      var e = event || window.event || arguments.callee.caller.arguments[0];
-      if(e && e.keyCode==32)nowx.value=nowy.value=-1,show();
-      if(e && e.keyCode==87)if(nowx.value!=-1&&nowx.value>0)setnow(nowx.value-1,nowy.value);
-      if(e && e.keyCode==83)if(nowx.value!=-1&&nowx.value+1<n.value)setnow(nowx.value+1,nowy.value);
-      if(e && e.keyCode==65)if(nowy.value!=-1&&nowy.value>0)setnow(nowx.value,nowy.value-1);
-      if(e && e.keyCode==68)if(nowy.value!=-1&&nowy.value+1<m.value)setnow(nowx.value,nowy.value+1);
-      if(e && e.keyCode==69){
+    var e = event || window.event || arguments.callee.caller.arguments[0];
+    if(e && e.keyCode==32)nowx.value=nowy.value=-1,show();
+    if(e && e.keyCode==87)if(nowx.value!=-1&&nowx.value>0)setnow(nowx.value-1,nowy.value);
+    if(e && e.keyCode==83)if(nowx.value!=-1&&nowx.value+1<n.value)setnow(nowx.value+1,nowy.value);
+    if(e && e.keyCode==65)if(nowy.value!=-1&&nowy.value>0)setnow(nowx.value,nowy.value-1);
+    if(e && e.keyCode==68)if(nowy.value!=-1&&nowy.value+1<m.value)setnow(nowx.value,nowy.value+1);
+    if(e && e.keyCode==69){
 	    if(Q.value.size()){
 			var lst=Q.value.popBack();
 			nowx.value=lst[0];
 			nowy.value=lst[1];
 			ws.send(JSON.stringify({'typ':'pop queue'}));
 		}
-   }if(e && e.keyCode==81){
+	}if(e && e.keyCode==81){
 	    if(Q.value.size()){
 			Q.value.clear();
 			ws.send(JSON.stringify({'typ':'clear queue'}));
 		}
-   }if(e && e.keyCode==88){
+	}if(e && e.keyCode==88){
 		var ums=[];
 		for(var i=0;i<n.value;i++)for(var j=0;j<m.value;j++)if(map.value[i][j][0]==3)
 			ums[ums.length]=[i,j];
@@ -160,28 +197,15 @@ document.onkeydown=function(event){
 		for(var i=0;i<ums.length;i++)
 			nowx.value=ums[i][0],nowy.value=ums[i][1],
 			setnow(tmpx,tmpy);
-   }if(e && e.keyCode==27){
-		ElMessageBox.confirm(
-			'是否投降？',
-			'Warning',
-			{
-				confirmButtonText: 'OK',
-				cancelButtonText: 'Cancel',
-				type: 'warning',
-			}
-		).then(() => {
-			ws.send(JSON.stringify({'typ':'surrender'}));
-			ElMessage({
-				type: 'success',
-				message: '已投降',
-			})
-		}).catch(() => {
-			ElMessage({
-				type: 'info',
-				message: '取消投降',
-			})
+	}if(e && e.keyCode==27){
+		 ElMessageBox.alert('确定投降吗', '投降', {
+			confirmButtonText: '确定',
+			callback: (action) => {
+				if(action=="confirm")
+					ws.send(JSON.stringify({'typ':'surrender'}));
+			},
 		})
-   }
+	}
 };
 function moused(e1) {
 	var drag = document.getElementById("map");
@@ -261,35 +285,99 @@ ws.onmessage = (evt)=>{
 		ws.close();
 		map.value=data.lstmap;
 		rank.value=data.lstrank;
-		axios.get('/qry?name='+data.name).then((response)=>{
-			// handle success
-			ElMessageBox.alert(
-				response.data,
-				'游戏结束',
-				{
-					dangerouslyUseHTMLString: true,
-				}
-			)
-		}).catch((error)=>{
-			console.log(error);
-		})
+		qrating.value=true;
+		name.value=data.name;
+		handleChange(data.name);
 	}
 };
-</script>
 
+</script>
 <template>
+	<el-drawer
+		v-model="ranking"
+		:direction="'ltr'"
+	>
+	<template #title>
+      <h1>rating榜</h1>
+    </template>
+    <template #default>
+        <el-table :data="ranking_content" stripe style="width: 100%">
+			<el-table-column label="排名" v-slot="slotProps" width="60" align="center">
+				{{slotProps.$index+1}}
+			</el-table-column>
+			<el-table-column label="用户名" v-slot="slotProps" align="center">
+				<span v-html="slotProps.row.name"></span>
+			</el-table-column>
+			<el-table-column label="rating" v-slot="slotProps" align="center">
+				<span v-html="slotProps.row.rating"></span>
+			</el-table-column>
+		</el-table>
+    </template>
+	</el-drawer>
+	<el-drawer
+		v-model="dranking"
+		:direction="'ltr'"
+	>
+	<template #title>
+      <h1>donation榜</h1>
+    </template>
+    <template #default>
+        <el-table :data="dranking_content" stripe style="width: 100%">
+			<el-table-column label="排名" v-slot="slotProps" width="60" align="center">
+				{{slotProps.$index+1}}
+			</el-table-column>
+			<el-table-column label="用户名" v-slot="slotProps" align="center">
+				<span v-html="slotProps.row.name"></span>
+			</el-table-column>
+		</el-table>
+    </template>
+	</el-drawer>
+	<el-drawer
+		v-model="infos"
+		:direction="'ltr'"
+	>
+	<template #title>
+      <h1>说明</h1>
+    </template>
+    <template #default>
+        <div v-html="infos_content"></div>
+    </template>
+	</el-drawer>
+	<el-drawer
+		v-model="qrating"
+		:direction="'ltr'"
+	>
+	<template #title>
+      <h1>rating变化查询</h1>
+    </template>
+    <template #default>
+		<el-input-number v-model="name" @change="handleChange" /> 
+		<el-link type="primary" v-bind:href="'replay?name='+name" target="_blank" v-if="qrating_content.status=='success'">回放</el-link>
+		<br><br>
+        <el-table :data="qrating_content.data" stripe style="width: 100%" v-if="qrating_content.status=='success'">
+			<el-table-column label="排名" v-slot="slotProps" width="60" align="center">
+				{{slotProps.$index+1}}
+			</el-table-column>
+			<el-table-column label="用户名" v-slot="slotProps" align="center">
+				<span v-html="slotProps.row.name"></span>
+			</el-table-column>
+			<el-table-column label="△" v-slot="slotProps" align="center">
+				<span v-html="slotProps.row.delta"></span>
+			</el-table-column>
+			<el-table-column label="变化" v-slot="slotProps" align="center">
+				<span v-html="slotProps.row.change"></span>
+			</el-table-column>
+		</el-table>
+		<div v-else>{{qrating_content.data}}</div>
+    </template>
+	</el-drawer>
 	<a href="https://github.com/juruocjl/fake-generals" target="_blank" class="ribbons" v-if="!start">
 		<img loading="lazy" width="149" height="149" src="./forkme_right_darkblue_121621.png" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
 	</a>
 	<div class="index" v-if="!start">
 		<div class="contain">
-			<div class="name" v-html="showname(user,rating)"></div>
+			<div class="name"><span v-html="showname(user,rating)"></span><i v-bind:class="'vip'+vip"/></div>
 			<div>当前rating为<span v-html="showname(rating,rating)"></span></div>
-			<el-button-group style="margin:10px;">
-			<el-button style="margin:10px;" type="info" plain @click="toggleDark()">
-        		{{isDark}}
-     		</el-button>
-			</el-button-group><br>
 			<el-button-group style="margin:10px;">
 			<el-button style="margin:10px;" type="success" plain @click="ws.send(JSON.stringify({'typ': 'startgame'}));">Start!</el-button>
 			</el-button-group><br>
@@ -313,7 +401,12 @@ ws.onmessage = (evt)=>{
 					</el-button>
 				</el-tooltip>
 				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'cancel'}));">cancel</el-button>
-			</el-button-group>
+			</el-button-group><br>
+			<el-button-group style="margin:10px;">
+			<el-button style="margin:10px;" type="info" plain @click="toggleDark()">
+        		{{isDark}}
+     		</el-button>
+			</el-button-group><br>
 		</div>
 	</div>
 	<div class="turn">turn <span id="turn">{{turn}}</span></div>
@@ -334,16 +427,16 @@ ws.onmessage = (evt)=>{
 	</tbody></table>
 	</div>
 	<div class="toolcontain" v-if="!start">
-		<div class="outer" id="showsearch" @click="nowwin=nowwin!='qry?name=1'?'qry?name=1':'none'">
+		<div class="outer" @click="showqrating()">
 			<div class="search"></div>
 		</div><br>
-		<div class="outer" id="showinfo" @click="nowwin=nowwin!='infos'?'infos':'none'">
+		<div class="outer" @click="showinfo()">
 			<div class="infos"></div>
 		</div><br>
-		<div class="outer" id="showdrank" @click="nowwin=nowwin!='donationrk'?'donationrk':'none'">
+		<div class="outer" @click="showdrank();">
 			<div class="donationrk"></div>
 		</div><br>
-		<div class="outer" id="showrank" @click="nowwin=nowwin!='ratingrk'?'ratingrk':'none'">
+		<div class="outer" @click="showrank();">
 			<div class="ranking"></div>
 		</div>
 	</div>
