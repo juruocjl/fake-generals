@@ -18,6 +18,7 @@ const gentoxins = require('./gen-toxins.js');
 const genyinjian = require('./gen-yinjian.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
+
 app.use(cookieParser())
 app.use(bp.urlencoded({extended:false}));
 app.use(session({
@@ -32,7 +33,7 @@ var db = mysql.createConnection({
 db.connect();
 function fail(title,text){return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';}
 function calcvip(donate){if(donate>25)return 3;if(donate>10)return 2;if(donate>0)return 1;return 0;}
-var infos=md.render('# 操作说明\n'+fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
+var infos=md.render(fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
 app.get('/', function (req,res) {
 	//console.log(req.session.userid,req.session.pswd)
 	if(req.session.userid&&req.session.pswd){
@@ -50,7 +51,7 @@ app.get('/', function (req,res) {
 				res.cookie('pswd',result[0].pswd,{maxAge:114514*24*60*60*1000})
 				res.cookie('rating',result[0].rating,{maxAge:114514*24*60*60*1000})
 				res.cookie('vip',calcvip(result[0].donation),{maxAge:114514*24*60*60*1000});
-				res.sendFile(path.join(__dirname,"index.html"));
+				res.sendFile(path.join(__dirname,"front","dist","index.html"));
 			}
 		});
 	}else{
@@ -58,10 +59,7 @@ app.get('/', function (req,res) {
 	}
 })
 app.get('/replay', function (req,res) {
-   res.sendFile(path.join(__dirname,"replay.html"));
-})
-app.get('/forkme_right_darkblue_121621.png', function (req,res) {
-   res.sendFile(path.join(__dirname,"/forkme_right_darkblue_121621.png"));
+   res.sendFile(path.join(__dirname,"front","dist","replay.html"));
 })
 app.get('/main.css', function (req,res) {
    res.sendFile(path.join(__dirname,"main.css"));
@@ -102,15 +100,14 @@ app.get('/donationrk', function (req,res){
 	var sql='SELECT * from users WHERE donation>0 ORDER BY donation DESC LIMIT 20';
 	db.query(sql,(err,result)=>{
 		if(err){
-			res.send(fail('查询失败',err.message));
-			return;
+			res.send({'status':'err'});
 		}else{
-			//console.log(result);
-			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>donation榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th></tr>';
+			var arr=[];
 			for(var i=0;i<result.length;i++)
-				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td></tr>';
-			html+='</tbody></table></body></html>';
-			res.send(html);
+				arr.push({
+					name:showname(result[i].name,result[i].rating)+"<i class='vip"+calcvip(result[i].donation)+"'/>"
+				});
+			res.send(JSON.stringify({'status':'success','data':arr}));
 		}
 	});
 });
@@ -118,20 +115,21 @@ app.get('/ratingrk', function (req,res){
 	var sql='SELECT * from users ORDER BY rating DESC LIMIT 20';
 	db.query(sql,(err,result)=>{
 		if(err){
-			res.send(fail('查询失败',err.message));
-			return;
+			res.send({'status':'err'});
 		}else{
 			//console.log(result);
-			var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating榜</h1><table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>分数</th></tr>';
+			var arr=[];
 			for(var i=0;i<result.length;i++)
-				html+='<tr><td>'+(i+1)+'</td><td>'+showname(result[i].name,result[i].rating)+' <i class="vip'+calcvip(result[i].donation)+'"></i></td><td>'+result[i].rating+'</td></tr>';
-			html+='</tbody></table></body></html>';
-			res.send(html);
+				arr.push({
+					name:showname(result[i].name,result[i].rating)+"<i class='vip"+calcvip(result[i].donation)+"'/>",
+					rating:showname(result[i].rating,result[i].rating)
+				});
+			res.send(JSON.stringify({'status':'success','data':arr}));
 		}
 	});
 });
 app.get('/infos',function(req,res){
-	res.send(infos);
+	res.send(JSON.stringify({'status':"success","data":infos}));
 })
 app.post('/submit',function(req,res){
     //console.log(req.body);
@@ -197,31 +195,25 @@ app.post('/submit',function(req,res){
 app.get('/qry',function(req,res){
 	var sql='SELECT users from games WHERE id='+req.query.name;
 	db.query(sql,(err,result)=>{
-		var html='<!DOCUTYPE HTML><html><head><meta charset="utf-8"></head><link rel="stylesheet" type="text/css" href="main.css"><body><h1>rating变化查询</h1><input id="name" value="'+req.query.name+'"></input><button onclick="location.href=\'qry?name=\'+document.getElementById(\'name\').value;">go</button> <a href="replay?name='+req.query.name+'" target="_blank">回放</a><br>';
-		if(err)html+="查询失败 "+err;
+		if(err)res.send(JSON.stringify({'status':'err','data':'err'}));
 		else if(result.length){
-			html+='<table border="1" style="width:100%"><tbody><tr><th>排名</th><th>用户名</th><th>△</th><th>变化</th></tr>';
+			var arr=[];
 			var users=JSON.parse(result[0].users);
 			users.sort((A,B)=>{return A.rk-B.rk;});
 			//console.log(users);
 			for(var i=0;i<users.length;i++){
 				var O=parseInt(users[i].rating),N=O+parseInt(users[i].delta);
-				html+='<tr><td>'+(i+1)+'</td><td>'+users[i].name+' <i class="vip'+users[i].vip+'"></i></td><td>'+users[i].delta+'</td><td>'
-				+showname(O,O)+' → '+showname(N,N)+'</td></tr>';
+				arr.push({
+					name:users[i].name+' <i class="vip'+users[i].vip+'"/>',
+					delta:users[i].delta,
+					change:showname(O,O)+' → '+showname(N,N)
+				})
 			}
-			html+='</tbody></table>';
-		}else html+='未找到';
-		html+='</body></html>';
-		res.send(html);
+			res.send(JSON.stringify({'status':'success','data':arr}));
+		}else res.send(JSON.stringify({'status':'err','data':'Not Found'}));
 	});
 });
-const wyh="1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
-function randstr(len){
-	var str="";
-	for(var i=0;i<len;i++)
-		str+=wyh[Math.floor(Math.random()*wyh.length)];
-	return str;
-}
+app.use(express.static(path.join(__dirname,'front','dist')));
 const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {
@@ -266,6 +258,7 @@ function pred(Map,val,add){
 	return Map;
 }
 function getCookie(cookie,cname) {
+	if(!cookie)return "";
 	var name = cname + "=";
 	var ca = cookie.split(';');
 	for (var i = 0; i < ca.length; i++) {
@@ -288,7 +281,7 @@ var ws=io.createServer(connection=>{
 	db.query(sql,(err,result)=>{
 		if(err){
 			console.error(err);
-			return;
+			connection.close();
 		}else if(result.length==0||result[0].pswd!=pswd||result[0].name!=username||result[0].rating!=rating){
 			console.log('pswd or username or rating err');
 			connection.close();
@@ -388,12 +381,12 @@ var ws=io.createServer(connection=>{
 					for(var j=0;j<n;j++){
 						players[i].lstmap[j]=[];
 						for(var k=0;k<m;k++)
-							if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark")
+							if((map[j][k][0]!=1&&map[j][k][0]!=-1&&map[j][k][0]!=3)||type=="dark"||type=="yinjian")
 								players[i].lstmap[j][k]=[-2];
 							else players[i].lstmap[j][k]=[-3];
 					}
 				for(var i=0;i<n;i++)for(var j=0;j<m;j++)
-					if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark")firstmap+="0";
+					if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark"||type=="yinjian")firstmap+="0";
 					else firstmap+="1";
 				ws.connections.forEach((connection)=>{
 					connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
@@ -414,7 +407,9 @@ var ws=io.createServer(connection=>{
 								if(map[now[0]][now[1]][1]==i)
 									if(map[now[0]][now[1]][2]>1)
 										if(0<=xx&&xx<n&&0<=yy&&yy<m)
-											if(map[xx][yy][0]!=-1){
+											if(map[xx][yy][0]!=-1&&
+												!(map[xx][yy][0]==3&&map[xx][yy][1]>=0&&
+												players[map[xx][yy][1]].team==players[i].team)){
 												var val;
 												if((now.length==3&&now[2]<4)||(now.length==5&&now[4]==0))
 													val=map[now[0]][now[1]][2]-1;
@@ -423,11 +418,8 @@ var ws=io.createServer(connection=>{
 												map[now[0]][now[1]][2]-=val;
 												if(map[xx][yy][0]==5);
 												else if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
-													if(map[xx][yy][0]!=3){
-														map[xx][yy][2]+=val;
-														if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
-													}
-													else map[now[0]][now[1]][2]+=val;
+													map[xx][yy][2]+=val;
+													if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
 												}else{
 													if(val>map[xx][yy][2]){
 														if(map[xx][yy][0]==2){
