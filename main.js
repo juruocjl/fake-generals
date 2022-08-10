@@ -476,7 +476,7 @@ var ws=io.createServer(connection=>{
 					for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji){
 						players[i].alive=false,
 						players[i].guaji=true,
-						players[i].Delta-=200;
+						players[i].Delta-=5;
 						dieturn[dieturn.length]=i;
 					}
 					var nowalive=0;
