@@ -1,6 +1,14 @@
 <script setup>
 import { ref ,computed, watch } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
+import { createGlobalState, useStorage } from '@vueuse/core'
+const useState = createGlobalState(() =>
+  useStorage('fg-user-config', {
+    bgimg: '',
+	color: ["#FF0000","#0000FF","#008000","#800080","#A52A2A","#FFA500","#FFC0CB","#FFFF00"]
+  }),
+)
+const state = useState()
 import axios from 'axios'
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
@@ -29,7 +37,6 @@ class Deque {
 	from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
 	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
-const color=["red","blue","green","purple","brown","orange","pink"];
 let userlist=ref([]);
 let n=ref(0),m=ref(0);
 let size=ref(30);
@@ -64,10 +71,10 @@ function bgcolor(i,j){
 	if(map.value[i][j][0]==-2||map.value[i][j][0]==-3)return "#565656";
 	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#b3b3b3";
 	if(map.value[i][j][0]==0){
-		if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
+		if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
 		else return "#d7d7d7";
 	}
-	if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
+	if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
 	else return "#757575";
 }
 var maps=[];
@@ -87,9 +94,9 @@ let players=computed(()=>{
 	var arr=[];
 	for(var i=0;i<rank.value.length;i++)
 		if(userlist.value[i].vip==0)
-			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating),'color':color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
+			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating),'color':state.value.color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
 		else
-			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating)+'<i class="vip'+userlist.value[i].vip+'"></i>','color':color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
+			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating)+'<i class="vip'+userlist.value[i].vip+'"></i>','color':state.value.color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
 	arr.sort((a,b)=>{
 		if(a.army!=b.army)return b.army-a.army;
 		if(a.land!=b.land)return b.land-a.land;

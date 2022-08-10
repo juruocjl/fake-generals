@@ -4,8 +4,9 @@ import { useDark, useToggle } from '@vueuse/core'
 import {Search,Info,Income,RankingList,SettingOne,SunOne,Moon} from '@icon-park/vue-next';
 import { createGlobalState, useStorage } from '@vueuse/core'
 const useState = createGlobalState(() =>
-  useStorage('vue-use-locale-storage', {
+  useStorage('fg-user-config', {
     bgimg: '',
+	color: ["#FF0000","#0000FF","#008000","#800080","#A52A2A","#FFA500","#FFC0CB","#FFFF00"]
   }),
 )
 const state = useState()
@@ -55,7 +56,6 @@ class Deque {
 	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
 let Q = ref(new Deque());
-const color=["red","blue","green","purple","brown","orange","pink"];
 let userlist=ref([]);
 let n=ref(0),m=ref(0);
 let nowx=ref(-1),nowy=ref(-1),op=ref(0);
@@ -136,10 +136,10 @@ function bgcolor(i,j){
 	if(map.value[i][j][0]==-2||map.value[i][j][0]==-3)return "#565656";
 	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#b3b3b3";
 	if(map.value[i][j][0]==0){
-		if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
+		if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
 		else return "#d7d7d7";
 	}
-	if(map.value[i][j][1]>=0)return color[map.value[i][j][1]];
+	if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
 	else return "#757575";
 }
 let rank = ref([]);
@@ -147,9 +147,9 @@ let players=computed(()=>{
 	var arr=[];
 	for(var i=0;i<rank.value.length;i++)
 		if(userlist.value[i].vip==0)
-			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating),'color':color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
+			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating),'color':state.value.color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
 		else
-			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating)+'<i class="vip'+userlist.value[i].vip+'"></i>','color':color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
+			arr[i]={'name':showname(userlist.value[i].name,userlist.value[i].rating)+'<i class="vip'+userlist.value[i].vip+'"></i>','color':state.value.color[i],'army':rank.value[i][0],'land':rank.value[i][1]};
 	arr.sort((a,b)=>{
 		if(a.army!=b.army)return b.army-a.army;
 		if(a.land!=b.land)return b.land-a.land;
@@ -301,7 +301,7 @@ ws.onmessage = (evt)=>{
 		handleChange(data.name);
 	}
 };
-
+console.log(state.value.color[2]);
 </script>
 <template>
 	<component is="style">
@@ -397,7 +397,22 @@ ws.onmessage = (evt)=>{
       <h1>设置</h1>
     </template>
     <template #default>
+		<h2>背景图片</h2>
 		<el-input v-model="state.bgimg" placeholder="背景图片" clearable/>
+		<h2>配色方案</h2>
+		<el-color-picker v-model="state.color[0]" />
+		<el-color-picker v-model="state.color[1]" />
+		<el-color-picker v-model="state.color[2]" />
+		<el-color-picker v-model="state.color[3]" />
+		<el-color-picker v-model="state.color[4]" />
+		<el-color-picker v-model="state.color[5]" />
+		<el-color-picker v-model="state.color[6]" />
+		<el-color-picker v-model="state.color[7]" />
+		<br>
+		<el-button type="success" plain @click='state.color=["#FF0000","#0000FF","#008000","#800080","#A52A2A","#FFA500","#FFC0CB","#FFFF00"]'>
+        	恢复到默认
+     	</el-button>
+		<h2>黑暗模式</h2>
 		<el-button-group style="margin:10px;">
 			<el-button style="margin:10px;" type="info" plain @click="toggleDark()">
         		<moon v-if="isDark"  theme="outline" size="24" fill="#333"/>
