@@ -104,8 +104,9 @@ let vis=computed(()=>{
 	return arr;
 });
 var notinit=true;
-watch(type, (newtype) => {
-	ws.send(JSON.stringify({'typ':'type change','type':newtype}));
+watch(type, (newtype,oldtype) => {
+	if(newtype!=oldtype)
+		ws.send(JSON.stringify({'typ':'type change','type':newtype}));
 })
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
@@ -251,8 +252,10 @@ ws.onmessage = (evt)=>{
 				map.value[i][j]=[-2];
 		}
 	}
-	if(data.typ=="type change")
-		type.value=data.type;
+	if(data.typ=="type change"){
+		if(type.value!=data.type)
+			type.value=data.type;
+	}
 	if(data.typ=="team change")
 		member.value=data.member;
 	if(data.typ=='init game'){
