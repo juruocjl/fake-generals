@@ -104,10 +104,6 @@ let vis=computed(()=>{
 	return arr;
 });
 var notinit=true;
-watch(type, (newtype,oldtype) => {
-	if(newtype!=oldtype)
-		ws.send(JSON.stringify({'typ':'type change','type':newtype}));
-})
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
 	if(!add)return Map;
@@ -385,12 +381,12 @@ ws.onmessage = (evt)=>{
 			<el-button style="margin:10px;" type="success" plain @click="ws.send(JSON.stringify({'typ': 'startgame'}));">Start!</el-button>
 			</el-button-group><br>
 			<el-radio-group style="margin:10px;" v-model="type" size="middle">
-				<el-radio-button label="ffa">FFA(rated)</el-radio-button>
-				<el-radio-button label="sb">伞兵大战</el-radio-button>
-				<el-radio-button label="dark">浓雾模式</el-radio-button>
-				<el-radio-button label="toxins">掉坑模式</el-radio-button>
-				<el-radio-button label="yinjian">阴间模式</el-radio-button>
-				<el-radio-button label="team">团队模式</el-radio-button>
+				<el-radio-button label="ffa" @click="ws.send(JSON.stringify({'typ':'type change','type':'ffa'}));">FFA(rated)</el-radio-button>
+				<el-radio-button label="sb" @click="ws.send(JSON.stringify({'typ':'type change','type':'sb'}));">伞兵大战</el-radio-button>
+				<el-radio-button label="dark" @click="ws.send(JSON.stringify({'typ':'type change','type':'dark'}));">浓雾模式</el-radio-button>
+				<el-radio-button label="toxins" @click="ws.send(JSON.stringify({'typ':'type change','type':'toxins'}));">掉坑模式</el-radio-button>
+				<el-radio-button label="yinjian" @click="ws.send(JSON.stringify({'typ':'type change','type':'yinjian'}));">阴间模式</el-radio-button>
+				<el-radio-button label="team" @click="ws.send(JSON.stringify({'typ':'type change','type':'team'}));">团队模式</el-radio-button>
 			</el-radio-group><br>
 			<el-button-group style="margin:10px;">
 				<el-tooltip v-bind:content="members(0)" placement="bottom" raw-content>

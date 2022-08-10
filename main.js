@@ -618,9 +618,10 @@ var ws=io.createServer(connection=>{
 		}
 		if(data.typ=="type change"){
 			if(!start){
-				type=data.type;
-				if(type=="ffa"||type=="sb"||type=="dark"||type=="team"||type=="toxins"||type=="yinjian")
+				if(type=="ffa"||type=="sb"||type=="dark"||type=="team"||type=="toxins"||type=="yinjian"){
+					type=data.type;
 					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
+				}
 			}
 		}
 		if(data.type=="join"){
