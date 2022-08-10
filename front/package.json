@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.0.6",
+    "@icon-park/vue-next": "^1.4.2",
     "@vueuse/core": "^9.1.0",
     "axios": "^0.27.2",
     "element-plus": "^2.2.12",

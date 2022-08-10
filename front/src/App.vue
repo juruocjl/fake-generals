@@ -1,6 +1,14 @@
 <script setup>
 import { ref ,computed, watch } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
+import {Search,Info,Income,RankingList,SettingOne,SunOne,Moon} from '@icon-park/vue-next';
+import { createGlobalState, useStorage } from '@vueuse/core'
+const useState = createGlobalState(() =>
+  useStorage('vue-use-locale-storage', {
+    bgimg: '',
+  }),
+)
+const state = useState()
 import axios from 'axios'
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
@@ -86,6 +94,10 @@ let qrating=ref(false);
 let qrating_content=ref({status:'err','data':'?'});
 function showqrating(){
 	qrating.value=true;
+}
+let setting=ref(false);
+function showsetting(){
+	setting.value=true;
 }
 let name=ref(0);
 function handleChange(value){
@@ -292,6 +304,13 @@ ws.onmessage = (evt)=>{
 
 </script>
 <template>
+	<component is="style">
+		body {
+			{{state.bgimg?'background:url("'+state.bgimg+'");':''}}
+			background-size: cover;
+ 		   	background-position: center;
+		}
+	</component>
 	<el-drawer
 		v-model="ranking"
 		:direction="'ltr'"
@@ -370,6 +389,50 @@ ws.onmessage = (evt)=>{
 		<div v-else>{{qrating_content.data}}</div>
     </template>
 	</el-drawer>
+	<el-drawer
+		v-model="setting"
+		:direction="'ltr'"
+	>
+	<template #title>
+      <h1>设置</h1>
+    </template>
+    <template #default>
+		<el-input v-model="state.bgimg" placeholder="背景图片" clearable/>
+		<el-button-group style="margin:10px;">
+			<el-button style="margin:10px;" type="info" plain @click="toggleDark()">
+        		<moon v-if="isDark"  theme="outline" size="24" fill="#333"/>
+				<sun-one v-else theme="outline" size="24" fill="#333"/>
+     		</el-button>
+		</el-button-group>
+    </template>
+	</el-drawer>
+	 <el-menu
+    class="el-menu-vertical-demo"
+	:collapse="true"
+	style="position:fixed;right:0;bottom:0"
+    v-if="!start"
+	>
+    <el-menu-item index="1" @click="showqrating()">
+      <search theme="outline" size="24" fill="#333"/>
+      <template #title>Rating查询</template>
+    </el-menu-item>
+	<el-menu-item index="2" @click="showinfo()">
+      <info theme="outline" size="24" fill="#333"/>
+      <template #title>说明</template>
+    </el-menu-item>
+	<el-menu-item index="3" @click="showdrank();">
+      <income theme="outline" size="24" fill="#333"/>
+      <template #title>donation榜</template>
+    </el-menu-item>
+	<el-menu-item index="4" @click="showrank();">
+      <ranking-list theme="outline" size="24" fill="#333"/>
+      <template #title>Rating榜</template>
+    </el-menu-item>
+	<el-menu-item index="5" @click="showsetting();">
+      <setting-one theme="outline" size="24" fill="#333"/>
+      <template #title>设置</template>
+    </el-menu-item>
+  </el-menu>
 	<a href="https://github.com/juruocjl/fake-generals" target="_blank" class="ribbons" v-if="!start">
 		<img loading="lazy" width="149" height="149" src="./forkme_right_darkblue_121621.png" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
 	</a>
@@ -401,11 +464,6 @@ ws.onmessage = (evt)=>{
 				</el-tooltip>
 				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'cancel'}));">cancel</el-button>
 			</el-button-group><br>
-			<el-button-group style="margin:10px;">
-			<el-button style="margin:10px;" type="info" plain @click="toggleDark()">
-        		{{isDark}}
-     		</el-button>
-			</el-button-group><br>
 		</div>
 	</div>
 	<div class="turn">turn <span id="turn">{{turn}}</span></div>
@@ -424,23 +482,6 @@ ws.onmessage = (evt)=>{
 			<td v-html="player.land"></td>
 		</tr>
 	</tbody></table>
-	</div>
-	<div class="toolcontain" v-if="!start">
-		<div class="outer" @click="showqrating()">
-			<div class="search"></div>
-		</div><br>
-		<div class="outer" @click="showinfo()">
-			<div class="infos"></div>
-		</div><br>
-		<div class="outer" @click="showdrank();">
-			<div class="donationrk"></div>
-		</div><br>
-		<div class="outer" @click="showrank();">
-			<div class="ranking"></div>
-		</div>
-	</div>
-	<div class="notice" v-if="nowwin!='none'&&!start">
-		<iframe v-bind:src="nowwin" style="height:100%;width:100%;"></iframe>
 	</div>
 	<table cellspacing="0" cellpadding="0" border="0" v-if="start" v-bind:style="{'--size':size+'px','font-size':Math.min(18,Math.floor((now+32)/5))+'px'}">
 		 <tbody class="map" id="map" @mousedown="moused" @mouseup="mouseu" @mousewheel="mousew">
