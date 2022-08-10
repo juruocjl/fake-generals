@@ -419,7 +419,7 @@ ws.onmessage = (evt)=>{
 			<th>land</th>
 		</tr>
 		<tr v-for="(player,index) in players">
-			<td v-bind:class="{'color':'white','background':player.color,'font-weight':800}">{{index+1}}</td>
+			<td v-bind:style="{'color':'white','background':player.color,'font-weight':800}">{{index+1}}</td>
 			<td v-html="player.name"></td>
 			<td v-html="player.army"></td>
 			<td v-html="player.land"></td>
