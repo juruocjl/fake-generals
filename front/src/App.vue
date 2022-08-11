@@ -62,14 +62,20 @@ let nowx=ref(-1),nowy=ref(-1),op=ref(0);
 let map=ref([]);
 let turn=ref('?');
 let type=ref('');
+let weather=ref([]);
+let totpeople=ref(0);
 let count=ref([0,0,0,0,0,0]);
-let member=ref([[],[]]);
+let wcount=ref([0,0,0]);
 let size=ref(30);
 let ranking=ref(false);
 let ranking_content=ref({});
 watch(type,(newvalue)=>{
-	console.log(newvalue);
+	//console.log(newvalue);
 	ws.send(JSON.stringify({'typ':'type change','type':newvalue}));
+})
+watch(weather,(newvalue)=>{
+	//console.log(JSON.stringify(newvalue));
+	ws.send(JSON.stringify({'typ':'weather change','type':newvalue}));
 })
 function showrank(){
 	ranking.value=true;
@@ -246,11 +252,6 @@ function mousew(e){
 		size.value=Math.max(25,size.value-3);
 	}
 }
-function members(i){
-	var str="";
-	member.value[i].forEach((x)=>{str=str+x.name+'<br>';});
-	return str;
-}
 document.body.onselectstart=document.body.oncontextmenu=function(){return false;};
 ws.onmessage = (evt)=>{
 	var data = JSON.parse(evt.data);
@@ -266,7 +267,9 @@ ws.onmessage = (evt)=>{
 		}
 	}
 	if(data.typ=="count change"){
+		totpeople.value=data.tot;
 		count.value=data.count;
+		wcount.value=data.wcount;
 	}
 	if(data.typ=='init game'){
 		start.value=true;
@@ -469,8 +472,19 @@ console.log(state.value.color[2]);
 				<el-radio-button label="yinjian">阴间模式 ({{count[4]}})</el-radio-button>
 				<el-radio-button label="team">团队模式 ({{count[5]}})</el-radio-button>
 			</el-radio-group><br>
+			<el-checkbox-group v-model="weather" size="middle" :disabled="type==''">
+				<el-checkbox-button label="lightning">
+					雷电({{wcount[0]}}/{{totpeople}})
+				</el-checkbox-button>
+				<el-checkbox-button label="earthquake">
+					地震({{wcount[1]}}/{{totpeople}})
+				</el-checkbox-button>
+				<el-checkbox-button label="wind" disabled>
+					大风({{wcount[2]}}/{{totpeople}})
+				</el-checkbox-button>
+			</el-checkbox-group>
 			<el-button-group style="margin:10px;">
-				<el-button type="primary" class="teamchoose" @click="type='';">cancel</el-button>
+				<el-button type="primary" class="teamchoose" @click="type='';weather=[];">cancel</el-button>
 			</el-button-group><br>
 		</div>
 	</div>

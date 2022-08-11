@@ -228,6 +228,7 @@ class Deque {
 	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
 const typename=["ffa","sb","dark","toxins","yinjian","team"];
+const weathername=["lightning","earthquake","wind"]
 var start=false;
 var players=[];
 var map=[];
@@ -242,7 +243,9 @@ var his=[];
 var dieturn=[];
 var member=[];
 var count=[0,0,0,0,0,0];
-var type="ffa";
+var wcount=[0,0,0]
+var type;
+var weather;
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
 	if(!add)return Map;
@@ -299,14 +302,17 @@ var ws=io.createServer(connection=>{
 	nowuser.push(userid);
 	var updatecnt=()=>{
 		count=[0,0,0,0,0,0];
-		member.forEach((x)=>{count[x.type]++});
-		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'count change','count':count}));});
+		wcount=[0,0,0];
+		member.forEach((x)=>{count[x.type]++;x.weather.forEach((y)=>{if(weathername.indexOf(y)>=0)wcount[weathername.indexOf(y)]++;})});
+		ws.connections.forEach((connection)=>{
+			connection.send(JSON.stringify({'typ':'count change','tot':member.length,'count':count,'wcount':wcount}));
+		});
 	}
 	var quit=()=>{
 		for(var i=0;i<member.length;i++)if(member[i].uid==userid)member.splice(i,1);
 	}
 	var join=(tp)=>{
-		member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp});
+		member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':[]});
 	}
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
@@ -317,6 +323,11 @@ var ws=io.createServer(connection=>{
 				var mx=0;
 				count.forEach((x)=>{mx=Math.max(mx,x)});
 				for(var i=typename.length-1;i>=0;i--)if(count[i]==mx)type=typename[i];
+				weather={};
+				if(wcount[0]*2>=member.length)weather.lightning=true;
+				if(wcount[1]*2>=member.length)weather.earthquake=true;
+				if(wcount[2]*2>=member.length)weather.wind=true;
+				console.log('start',type,weather);
 				if(type!='team'){
 					member.forEach((x)=>{
 						players.push(
@@ -410,7 +421,6 @@ var ws=io.createServer(connection=>{
 												}else{
 													if(val>map[xx][yy][2]){
 														if(map[xx][yy][0]==2){
-															map[xx][yy][2]=val-map[xx][yy][2];
 															var dead=map[xx][yy][1];
 															if(players[dead].alive){
 																players[dead].alive=false;
@@ -418,8 +428,10 @@ var ws=io.createServer(connection=>{
 																players[i].Delta+=100*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 																players[dead].Delta-=50*(players[dead].rating/players[i].rating)*Math.log2(1+rank[dead][0]/rank[i][0]);
 															}
+															var ori=map[xx][yy][2];
 															for(var x=0;x<n;x++)for(var y=0;y<m;y++)if(map[x][y][1]==dead)
-																map[x][y][1]=i;
+																map[x][y][1]=i,map[x][y][2]=Math.ceil(map[x][y][2]/2);
+															map[xx][yy][2]=val-ori;
 															map[xx][yy][0]=1;
 														}else if(map[xx][yy][0]!=3){
 															map[xx][yy][2]=val-map[xx][yy][2];
@@ -450,6 +462,21 @@ var ws=io.createServer(connection=>{
 										map[i][j][1]=-1,
 										map[i][j][2]=0;
 								}
+						if(weather.lightning){
+							map[Math.floor(Math.random()*n)][Math.floor(Math.random()*m)][2]=0;
+						}
+						if(weather.earthquake&&(turn+1)%4==0){
+							var mountains=[],emptys=[];
+							for(var i=0;i<n;i++)for(var j=0;j<m;j++)
+								if(map[i][j][0]==-1)mountains.push([i,j]);
+								else if(map[i][j][0]==0)emptys.push([i,j]);
+							mountains.sort(()=>{return Math.random()-0.5});
+							emptys.sort(()=>{return Math.random()-0.5});
+							while(mountains.length>4)mountains.pop();
+							while(emptys.length>4)emptys.pop();
+							mountains.forEach((x)=>{map[x[0]][x[1]]=[0,-1,0];});
+							emptys.forEach((x)=>{map[x[0]][x[1]]=[-1,0,0];});
+						}
 						if((turn+1)%everyadd==0)
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
@@ -516,8 +543,8 @@ var ws=io.createServer(connection=>{
 								'guaji':players[i].guaji,
 								'team':players[i].team
 							}
-						var sql = 'INSERT INTO `games` (`type`,  `ver`,  `everyadd`,  `users`) VALUES (?, ?, ?, ?)';
-						db.query(sql,[type,2,everyadd,JSON.stringify(users)],(err,result)=>{
+						var sql = 'INSERT INTO `games` (`type`, `weather`, `ver`,  `everyadd`,  `users`) VALUES (?, ?, ?, ?, ?)';
+						db.query(sql,[type,JSON.stringify(weather),2,everyadd,JSON.stringify(users)],(err,result)=>{
 							if(err){
 								console.error(err);
 							}else{
@@ -536,6 +563,7 @@ var ws=io.createServer(connection=>{
 								dieturn=[];
 								member=[];
 								count=[0,0,0,0,0,0];
+								wcount=[0,0,0];
 								lst=-1;
 								clearInterval(timer);
 							}
@@ -612,6 +640,14 @@ var ws=io.createServer(connection=>{
 				updatecnt();
 			}
 		}
+		if(data.typ=="weather change"){
+			if(!start){
+				for(var i=0;i<member.length;i++)
+					if(member[i].uid==userid)
+						member[i].weather=data.type;
+				updatecnt();
+			}
+		}
 	})
 	connection.on("close", function (code, reason) {
 		console.log("Connection closed");
@@ -627,7 +663,7 @@ var ws=io.createServer(connection=>{
 		if(nowuser.indexOf(userid)!=-1)nowuser.splice(nowuser.indexOf(userid));
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
-	connection.send(JSON.stringify({'typ':'count change','count':count}));
+	connection.send(JSON.stringify({'typ':'count change','tot':member.length,'count':count,'wcount':wcount}));
 });
 ws.listen(3000)
 var server = app.listen(config.port)
