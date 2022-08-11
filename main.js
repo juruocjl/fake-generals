@@ -227,6 +227,7 @@ class Deque {
 	from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
 	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
+const typename=["ffa","sb","dark","toxins","yinjian","team"];
 var start=false;
 var players=[];
 var map=[];
@@ -239,7 +240,8 @@ var turn=0;
 var rank=[];
 var his=[];
 var dieturn=[];
-var member=[[],[]];
+var member=[];
+var count=[0,0,0,0,0,0];
 var type="ffa";
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
@@ -295,22 +297,29 @@ var ws=io.createServer(connection=>{
 		return;
 	}
 	nowuser.push(userid);
-	var quit=()=>{
-		for(var i=0;i<member[0].length;i++)if(member[0][i].uid==userid)member[0].splice(i,1);
-		for(var i=0;i<member[1].length;i++)if(member[1][i].uid==userid)member[1].splice(i,1);
+	var updatecnt=()=>{
+		count=[0,0,0,0,0,0];
+		member.forEach((x)=>{count[x.type]++});
+		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'count change','count':count}));});
 	}
-	var join=(team)=>{
-		member[team].push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating)})
+	var quit=()=>{
+		for(var i=0;i<member.length;i++)if(member[i].uid==userid)member.splice(i,1);
+	}
+	var join=(tp)=>{
+		member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp});
 	}
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
 		//console.log(data);
 		if(data.typ=='startgame'){
-			if(!start&&member[0].length+member[1].length>1){
+			if(!start&&member.length>1){
 				start=true;
-				if(type!="team"){
-					member[0].forEach((x)=>{
-						players[players.length]=
+				var mx=0;
+				count.forEach((x)=>{mx=Math.max(mx,x)});
+				for(var i=typename.length-1;i>=0;i--)if(count[i]==mx)type=typename[i];
+				if(type!='team'){
+					member.forEach((x)=>{
+						players.push(
 						{
 							"name":x.name,
 							"uid":x.uid,
@@ -319,23 +328,13 @@ var ws=io.createServer(connection=>{
 							'Delta':0,'guaji':false,'queue':new Deque(),
 							'alive':true,'lstmap':[],'lstvis':0,
 							'team':players.length
-						};
-					});
-					member[1].forEach((x)=>{
-						players[players.length]=
-						{
-							"name":x.name,
-							"uid":x.uid,
-							'vip':x.vip,
-							'rating':x.rating,
-							'Delta':0,'guaji':false,'queue':new Deque(),
-							'alive':true,'lstmap':[],'lstvis':0,
-							'team':players.length
-						};
+						});
 					});
 				}else{
-					member[0].forEach((x)=>{
-						players[players.length]=
+					member.sort(()=>{return Math.random()-0.5;});
+					for(var i=0;i<member.length;i++)member[i].team=(i<member.length/2)?0:1;
+					member.forEach((x)=>{
+						players.push(
 						{
 							"name":x.name,
 							"uid":x.uid,
@@ -343,20 +342,8 @@ var ws=io.createServer(connection=>{
 							'rating':x.rating,
 							'Delta':0,'guaji':false,'queue':new Deque(),
 							'alive':true,'lstmap':[],'lstvis':0,
-							'team':0
-						};
-					});
-					member[1].forEach((x)=>{
-						players[players.length]=
-						{
-							"name":x.name,
-							"uid":x.uid,
-							'vip':x.vip,
-							'rating':x.rating,
-							'Delta':0,'guaji':false,'queue':new Deque(),
-							'alive':true,'lstmap':[],'lstvis':0,
-							'team':1
-						};
+							'team':x.team
+						});
 					});
 				}
 				var res;
@@ -547,7 +534,8 @@ var ws=io.createServer(connection=>{
 								rank=[];
 								users=[];
 								dieturn=[];
-								member=[[],[]];
+								member=[];
+								count=[0,0,0,0,0,0];
 								lst=-1;
 								clearInterval(timer);
 							}
@@ -618,39 +606,28 @@ var ws=io.createServer(connection=>{
 		}
 		if(data.typ=="type change"){
 			if(!start){
-				if(type=="ffa"||type=="sb"||type=="dark"||type=="team"||type=="toxins"||type=="yinjian"){
-					type=data.type;
-					ws.connections.forEach((connection)=>{connection.send(JSON.stringify(data));});
-				}
+				quit();
+				if(typename.indexOf(data.type)>=0)
+					join(typename.indexOf(data.type));
+				updatecnt();
 			}
-		}
-		if(data.type=="join"){
-			quit();
-			join(data.team);
-			ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
-		}
-		if(data.type=="cancel"){
-			quit();
-			ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
 		}
 	})
 	connection.on("close", function (code, reason) {
 		console.log("Connection closed");
 		quit();
-		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
-		if(nowuser.indexOf(userid)!=-1)
-			nowuser.splice(nowuser.indexOf(userid));
+		updatecnt();
+		if(nowuser.indexOf(userid)!=-1)nowuser.splice(nowuser.indexOf(userid));
 	})
 	connection.on("error",() => {
 		console.log('服务异常关闭...');
 		quit();
-		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'team change','member':member}));});
-		if(nowuser.indexOf(userid)!=-1)
-			nowuser.splice(nowuser.indexOf(userid));
+		updatecnt();
+		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'count change','count':count}));});
+		if(nowuser.indexOf(userid)!=-1)nowuser.splice(nowuser.indexOf(userid));
 	})
 	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
-	connection.send(JSON.stringify({'typ':'type change','type':type}));
-	connection.send(JSON.stringify({'typ':'team change','member':member}));
+	connection.send(JSON.stringify({'typ':'count change','count':count}));
 });
 ws.listen(3000)
 var server = app.listen(config.port)

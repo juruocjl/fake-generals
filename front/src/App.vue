@@ -61,11 +61,16 @@ let n=ref(0),m=ref(0);
 let nowx=ref(-1),nowy=ref(-1),op=ref(0);
 let map=ref([]);
 let turn=ref('?');
-let type=ref();
+let type=ref('');
+let count=ref([0,0,0,0,0,0]);
 let member=ref([[],[]]);
 let size=ref(30);
 let ranking=ref(false);
 let ranking_content=ref({});
+watch(type,(newvalue)=>{
+	console.log(newvalue);
+	ws.send(JSON.stringify({'typ':'type change','type':newvalue}));
+})
 function showrank(){
 	ranking.value=true;
 	axios.get('ratingrk').then((response)=>{
@@ -260,12 +265,9 @@ ws.onmessage = (evt)=>{
 				map.value[i][j]=[-2];
 		}
 	}
-	if(data.typ=="type change"){
-		if(type.value!=data.type)
-			type.value=data.type;
+	if(data.typ=="count change"){
+		count.value=data.count;
 	}
-	if(data.typ=="team change")
-		member.value=data.member;
 	if(data.typ=='init game'){
 		start.value=true;
 		userlist.value = data.users;
@@ -299,6 +301,7 @@ ws.onmessage = (evt)=>{
 		qrating.value=true;
 		name.value=data.name;
 		handleChange(data.name);
+		window.onmousemove = null;
 	}
 };
 console.log(state.value.color[2]);
@@ -459,25 +462,15 @@ console.log(state.value.color[2]);
 			<el-button style="margin:10px;" type="success" plain @click="ws.send(JSON.stringify({'typ': 'startgame'}));">Start!</el-button>
 			</el-button-group><br>
 			<el-radio-group style="margin:10px;" v-model="type" size="middle">
-				<el-radio-button label="ffa" @click="ws.send(JSON.stringify({'typ':'type change','type':'ffa'}));">FFA(rated)</el-radio-button>
-				<el-radio-button label="sb" @click="ws.send(JSON.stringify({'typ':'type change','type':'sb'}));">伞兵大战</el-radio-button>
-				<el-radio-button label="dark" @click="ws.send(JSON.stringify({'typ':'type change','type':'dark'}));">浓雾模式</el-radio-button>
-				<el-radio-button label="toxins" @click="ws.send(JSON.stringify({'typ':'type change','type':'toxins'}));">掉坑模式</el-radio-button>
-				<el-radio-button label="yinjian" @click="ws.send(JSON.stringify({'typ':'type change','type':'yinjian'}));">阴间模式</el-radio-button>
-				<el-radio-button label="team" @click="ws.send(JSON.stringify({'typ':'type change','type':'team'}));">团队模式</el-radio-button>
+				<el-radio-button label="ffa">FFA(rated) ({{count[0]}})</el-radio-button>
+				<el-radio-button label="sb">伞兵大战 ({{count[1]}})</el-radio-button>
+				<el-radio-button label="dark">浓雾模式 ({{count[2]}})</el-radio-button>
+				<el-radio-button label="toxins">掉坑模式 ({{count[3]}})</el-radio-button>
+				<el-radio-button label="yinjian">阴间模式 ({{count[4]}})</el-radio-button>
+				<el-radio-button label="team">团队模式 ({{count[5]}})</el-radio-button>
 			</el-radio-group><br>
 			<el-button-group style="margin:10px;">
-				<el-tooltip v-bind:content="members(0)" placement="bottom" raw-content>
-					<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':0}));">
-						team1
-					</el-button>
-				</el-tooltip>
-				<el-tooltip v-bind:content="members(1)" placement="bottom" raw-content>
-					<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'join','team':1}));">
-						team2
-					</el-button>
-				</el-tooltip>
-				<el-button type="primary" class="teamchoose" @click="ws.send(JSON.stringify({'type':'cancel'}));">cancel</el-button>
+				<el-button type="primary" class="teamchoose" @click="type='';">cancel</el-button>
 			</el-button-group><br>
 		</div>
 	</div>
