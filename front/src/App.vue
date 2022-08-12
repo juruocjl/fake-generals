@@ -72,6 +72,7 @@ let ranking_content=ref({});
 watch(type,(newvalue)=>{
 	//console.log(newvalue);
 	ws.send(JSON.stringify({'typ':'type change','type':newvalue}));
+	ws.send(JSON.stringify({'typ':'weather change','type':weather.value}));
 })
 watch(weather,(newvalue)=>{
 	//console.log(JSON.stringify(newvalue));
