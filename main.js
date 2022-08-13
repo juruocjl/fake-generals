@@ -10,12 +10,12 @@ const md=require('markdown-it')();
 var md5 = require('md5-node');
 function hasFile(name){console.log(name);try{fs.accessSync(name,fs.constants.F_OK);return true;}catch(err){return false;}}
 try{fs.mkdirSync(path.join(__dirname,'replay'))}catch(err){}
-const genffa = require('./gen-ffa.js');
-const gensb = require('./gen-sb.js');
-const gendark = require('./gen-dark.js');
-const genteam = require('./gen-team.js');
-const gentoxins = require('./gen-toxins.js');
-const genyinjian = require('./gen-yinjian.js');
+const genffa = require('./maps/gen-ffa.js');
+const gensb = require('./maps/gen-sb.js');
+const gendark = require('./maps/gen-dark.js');
+const genteam = require('./maps/gen-team.js');
+const gentoxins = require('./maps/gen-toxins.js');
+const genyinjian = require('./maps/gen-yinjian.js');
 if(!hasFile(path.join(__dirname,'config.js')))fs.writeFileSync(path.join(__dirname,'config.js'),"module.exports={\n\tport:80,\n\teveryadd:25,\n\teachturn:600,\n\tguaji:50,\n\tdbhost:'localhost',\n\tdbport:'3306',\n\tdbuser:'root',\n\tdbpswd:'123456',\n\tdbname:'generals'\n};")
 const config = require('./config.js');
 
@@ -33,7 +33,7 @@ var db = mysql.createConnection({
 db.connect();
 function fail(title,text){return '<!DOCTYPE HTML><html><head><title>'+title+'</title><meta charset="utf-8"></head><body style="display: flex;align-items: center;justify-content: center;height: calc(100vh);margin: 0;"><div style="text-align: center;"><h1>'+text+'</h1><a href="/">返回主页</a></div></body></html>';}
 function calcvip(donate){if(donate>25)return 3;if(donate>10)return 2;if(donate>0)return 1;return 0;}
-var infos=md.render(fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
+var infos=md.render('# 游戏说明\n'+fs.readFileSync(path.join(__dirname,'rules.md'))+'\n# 更新日志\n'+fs.readFileSync(path.join(__dirname,'changelog.md')));
 app.get('/', function (req,res) {
 	//console.log(req.session.userid,req.session.pswd)
 	if(req.session.userid&&req.session.pswd){
@@ -311,8 +311,8 @@ var ws=io.createServer(connection=>{
 	var quit=()=>{
 		for(var i=0;i<member.length;i++)if(member[i].uid==userid)member.splice(i,1);
 	}
-	var join=(tp)=>{
-		member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':[]});
+	var join=(tp,wt)=>{
+		member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':wt});
 	}
 	connection.on("text",(data)=>{
 		data=JSON.parse(data);
@@ -414,7 +414,11 @@ var ws=io.createServer(connection=>{
 												else val=Math.floor(map[now[0]][now[1]][2]/2);
 												//console.log(map[xx][yy],val);
 												map[now[0]][now[1]][2]-=val;
-												if(map[xx][yy][0]==5);
+												if(now.length==5&&weather.wind)
+													xx+=Math.floor(Math.random()*3)-1,
+													yy+=Math.floor(Math.random()*3)-1;
+												if(xx<0||xx>=n||yy<0||yy>=m||
+													map[xx][yy][0]==-1||map[xx][yy][0]==5);
 												else if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
 													map[xx][yy][2]+=val;
 													if(map[xx][yy][0]!=2)map[xx][yy][1]=i;
@@ -636,7 +640,7 @@ var ws=io.createServer(connection=>{
 			if(!start){
 				quit();
 				if(typename.indexOf(data.type)>=0)
-					join(typename.indexOf(data.type));
+					join(typename.indexOf(data.type),data.weather);
 				updatecnt();
 			}
 		}

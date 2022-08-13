@@ -71,8 +71,7 @@ let ranking=ref(false);
 let ranking_content=ref({});
 watch(type,(newvalue)=>{
 	//console.log(newvalue);
-	ws.send(JSON.stringify({'typ':'type change','type':newvalue}));
-	ws.send(JSON.stringify({'typ':'weather change','type':weather.value}));
+	ws.send(JSON.stringify({'typ':'type change','type':newvalue,'weather':weather.value}));
 })
 watch(weather,(newvalue)=>{
 	//console.log(JSON.stringify(newvalue));
@@ -480,7 +479,7 @@ console.log(state.value.color[2]);
 				<el-checkbox-button label="earthquake">
 					地震({{wcount[1]}}/{{totpeople}})
 				</el-checkbox-button>
-				<el-checkbox-button label="wind" disabled>
+				<el-checkbox-button label="wind">
 					大风({{wcount[2]}}/{{totpeople}})
 				</el-checkbox-button>
 			</el-checkbox-group>
