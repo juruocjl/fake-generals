@@ -78,8 +78,11 @@ function bgcolor(i,j){
 	else return "#757575";
 }
 var maps=[];
+var ltxs=[],ltys=[];
 let ver = ref(0);
 let turn = ref(0);
+let ltx=computed(()=>{return ltxs[turn.value];});
+let lty=computed(()=>{return ltys[turn.value];});
 let map=computed(()=>{return maps[turn.value];})
 let rank = computed(()=>{
 	var arr=[];
@@ -146,11 +149,15 @@ function Start(){
 			m.value=data.his[0][0].length;
 			userlist.value=data.users;
 			var cnt=data.his.length;
-			maps[0]=data.his[0];
+			maps[0]=data.his[0];ltxs[0]=ltys[0]=-1;
 			var everyadd=data.everyadd;
 			for(var i=1;i<data.his.length;i++){
+				ltxs[i]=ltys[i]=-1;
 				maps[i]=pred(maps[i-1],(i+1)%everyadd==0,(data.ver>=2)?i%2==1:true);
-				data.his[i].forEach((x)=>{maps[i][x[0]][x[1]]=x[2];});
+				data.his[i].forEach((x)=>{
+					if(x[0]=='lt'||x[0]=='lightning')ltxs[i]=x[1],ltys[i]=x[2];
+					else maps[i][x[0]][x[1]]=x[2];
+				});
 			}
 			ver.value=data.ver;
 			document.onkeydown=function(event){
@@ -213,6 +220,7 @@ function Start(){
 						umbrella:map[i-1][j-1][0]==3,
 						water:map[i-1][j-1][0]==4
 					}">{{nowx==i-1&&nowy==j-1&&op==1?"50%":(map[i-1][j-1][2]?map[i-1][j-1][2]:"")}}</span>
+					<span class="lightning" v-if="ltx==i-1&&lty==j-1"></span>
 				</td>
 			</tr>
 		 </tbody>

@@ -246,6 +246,7 @@ var count=[0,0,0,0,0,0];
 var wcount=[0,0,0]
 var type;
 var weather;
+var ltx=undefined,lty=undefined;
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
 	if(!add)return Map;
@@ -453,6 +454,7 @@ var ws=io.createServer(connection=>{
 											}
 						}
 					}
+					ltx=lty=-1;
 					if(turn%2==1){
 						for(var i=0;i<n;i++)
 							for(var j=0;j<m;j++)
@@ -467,7 +469,7 @@ var ws=io.createServer(connection=>{
 										map[i][j][2]=0;
 								}
 						if(weather.lightning){
-							map[Math.floor(Math.random()*n)][Math.floor(Math.random()*m)][2]=0;
+							map[ltx=Math.floor(Math.random()*n)][lty=Math.floor(Math.random()*m)][2]=0;
 						}
 						if(weather.earthquake&&(turn+1)%4==0){
 							var mountains=[],emptys=[];
@@ -487,9 +489,9 @@ var ws=io.createServer(connection=>{
 									if(map[i][j][0]==0&&map[i][j][1]>=0)
 										map[i][j][2]++;
 					}
-					his[turn]=[];
+					his[turn]=[['lt',ltx,lty]];
 					for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
-						his[turn][his[turn].length]=[i,j,JSON.parse(JSON.stringify(map[i][j]))];
+						his[turn].push([i,j,JSON.parse(JSON.stringify(map[i][j]))]);
 					//console.log(his[turn]);
 					for(var i=0;i<players.length;i++)if(players[i].alive&&turn-players[i].lstvis>=guanji){
 						players[i].alive=false,
@@ -605,12 +607,12 @@ var ws=io.createServer(connection=>{
 					}
 				}
 				if(data.full)
-					connection.send(JSON.stringify({'typ':'map','val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()}))
+					connection.send(JSON.stringify({'typ':'map','ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()}))
 				else
-					connection.send(JSON.stringify({'typ':'map','val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()}));
+					connection.send(JSON.stringify({'typ':'map','ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()}));
 				return;
 			}
-			connection.send(JSON.stringify({'typ':'map','val':false,'full':false,'diff':[],'queue':""}));
+			connection.send(JSON.stringify({'typ':'map','ltx':ltx,'lty':lty,'val':false,'full':false,'diff':[],'queue':""}));
 		}
 		if(data.typ=='add queue'){
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){

@@ -69,6 +69,8 @@ let wcount=ref([0,0,0]);
 let size=ref(30);
 let ranking=ref(false);
 let ranking_content=ref({});
+let ltx=ref(-1);
+let lty=ref(-1);
 watch(type,(newvalue)=>{
 	//console.log(newvalue);
 	ws.send(JSON.stringify({'typ':'type change','type':newvalue,'weather':weather.value}));
@@ -294,7 +296,8 @@ ws.onmessage = (evt)=>{
 			map.value=pred(map.value,data.val,data.add);
 			for(var i=0;i<data.diff.length;i++)
 				map.value[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
-		}else map.value=data.map,notinit=false;
+			ltx.value=data.ltx,lty.value=data.lty;
+		}else map.value=data.map,ltx.value=data.ltx,lty.value=data.lty,notinit=false;
 		Q.value.from_string(data.queue);
 	}
 	if(data.typ=='end'){
@@ -525,6 +528,7 @@ console.log(state.value.color[2]);
 					<span class='down' v-if="vis[i-1][j-1][1]"></span>
 					<span class='left' v-if="vis[i-1][j-1][2]"></span>
 					<span class='right' v-if="vis[i-1][j-1][3]"></span>
+					<span class="lightning" v-if="ltx==i-1&&lty==j-1"></span>
 				</td>
 			</tr>
 		 </tbody>
