@@ -153,8 +153,8 @@ app.post('/submit',function(req,res){
 			}
 		});
 	}else{
-		if(!req.body.name.match(/^[a-z0-9]+$/g)){
-			res.send(fail('注册失败','只能使用小写字母和数字'));
+		if(!req.body.name.match(/^[a-zA-Z0-9]+$/g)){
+			res.send(fail('注册失败','只能使用字母和数字'));
 		}else if(req.body.name.length>20){
 			res.send(fail('注册失败','名字最多为20个字符'));
 		}else if(req.body.pswd.length>25){
