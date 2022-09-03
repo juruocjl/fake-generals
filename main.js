@@ -478,8 +478,8 @@ var ws=io.createServer(connection=>{
 								else if(map[i][j][0]==0)emptys.push([i,j]);
 							mountains.sort(()=>{return Math.random()-0.5});
 							emptys.sort(()=>{return Math.random()-0.5});
-							while(mountains.length>4)mountains.pop();
-							while(emptys.length>4)emptys.pop();
+							while(mountains.length>1)mountains.pop();
+							while(emptys.length>1)emptys.pop();
 							mountains.forEach((x)=>{map[x[0]][x[1]]=[0,-1,0];});
 							emptys.forEach((x)=>{map[x[0]][x[1]]=[-1,0,0];});
 						}

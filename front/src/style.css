@@ -1,5 +1,5 @@
 body{user-select: none;width: calc(100vw);height: calc(100vh);margin: 0;}
-.map{position: fixed;left:50%;top:50%;transform: translate(-50%, -50%);color:white;font-size:18px;font-weight:800;white-space: nowrap;}
+.map{position: fixed;left:50%;top:50%;transform: translate(-50%, -50%);color:white;font-size:18px;font-weight:200;white-space: nowrap;}
 .contain{position: fixed;left:50%;top:50%;transform:translate(-50%, -50%);text-align:center;}
 .name{width:150px;height:30px;border:1px solid #ccc;padding:14px;border-radius:16px;font-size:20px;margin:10px;display: inline-block;background: var(--el-fill-color);}
 .cell{position: relative;height:var(--size);width:var(--size);text-align:center;display:inline-block;}
