@@ -19,6 +19,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
+        room: resolve(__dirname, 'room.html'),
         replay: resolve(__dirname, 'replay.html'),
       }
     },

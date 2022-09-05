@@ -1,6 +1,6 @@
 {
   "name": "fake-generals",
-  "version": "4.3",
+  "version": "5.0",
   "description": "fake generals",
   "main": "main.js",
   "author": "juruocjl",
@@ -14,6 +14,7 @@
     "markdown-it": "^13.0.1",
     "md5-node": "^1.0.1",
     "mysql": "^2.18.1",
-    "nodejs-websocket": "^1.7.2"
+    "nodejs-websocket": "^1.7.2",
+    "socket.io": "^4.5.2"
   }
 }

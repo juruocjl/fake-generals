@@ -3,7 +3,10 @@ var session = require("cookie-session");
 const bp = require('body-parser');
 const cookieParser=require('cookie-parser')
 var app = express();
-const io = require('nodejs-websocket');
+const server = require('http').createServer(app);
+const io = require('socket.io')(server,{
+    cors: {origin: "*"}
+});
 const fs=require('fs');
 const path=require('path');
 const md=require('markdown-it')();
@@ -54,9 +57,30 @@ app.get('/', function (req,res) {
 				res.sendFile(path.join(__dirname,"front","dist","index.html"));
 			}
 		});
-	}else{
-		res.sendFile(path.join(__dirname,"login.html"));
-	}
+	}else res.sendFile(path.join(__dirname,"login.html"));
+})
+app.get('/room/*', function (req,res) {
+	//console.log(req.session.userid,req.session.pswd)
+	console.log('room')
+	if(req.session.userid&&req.session.pswd){
+		var sql = 'SELECT * FROM users WHERE id='+req.session.userid;
+		db.query(sql,(err,result)=>{
+			if(err){
+				res.send(fail('查询失败',err.message));
+				return;
+			}else if(result.length==0||result[0].pswd!=req.session.pswd){
+				req.session.userid=req.session.pswd=null;
+				res.redirect('/');
+			}else{
+				res.cookie('userid',result[0].id,{maxAge:114514*24*60*60*1000});
+				res.cookie('username',result[0].name,{maxAge:114514*24*60*60*1000});
+				res.cookie('pswd',result[0].pswd,{maxAge:114514*24*60*60*1000})
+				res.cookie('rating',result[0].rating,{maxAge:114514*24*60*60*1000})
+				res.cookie('vip',calcvip(result[0].donation),{maxAge:114514*24*60*60*1000});
+				res.sendFile(path.join(__dirname,"front","dist","room.html"));
+			}
+		});
+	}else res.sendFile(path.join(__dirname,"login.html"));
 })
 app.get('/replay', function (req,res) {
    res.sendFile(path.join(__dirname,"front","dist","replay.html"));
@@ -132,7 +156,6 @@ app.get('/infos',function(req,res){
 	res.send(JSON.stringify({'status':"success","data":infos}));
 })
 app.post('/submit',function(req,res){
-    //console.log(req.body);
     if(req.body.type=="login"){
 		var sql = 'SELECT * FROM users WHERE name="'+req.body.name+'"';
 		db.query(sql,(err,result)=>{
@@ -229,27 +252,10 @@ class Deque {
 };
 const typename=["ffa","sb","dark","toxins","yinjian","team"];
 const weathername=["lightning","earthquake","wind"]
-var start=false;
-var players=[];
-var map=[];
-var users=[];
-var n,m;
-const everyadd=config.everyadd;
-const eachturn=config.eachturn;
-const guanji=config.guaji;
-var turn=0;
-var rank=[];
-var his=[];
-var dieturn=[];
-var member=[];
-var count=[0,0,0,0,0,0];
-var wcount=[0,0,0]
-var type;
-var weather;
-var ltx=undefined,lty=undefined;
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
 	if(!add)return Map;
+	var n=Map.length,m=Map[0].length;
 	for(var i=0;i<n;i++)
 		for(var j=0;j<m;j++){
 			if(Map[i][j][0]>=0&&Map[i][j][1]>=0){
@@ -274,51 +280,60 @@ function getCookie(cookie,cname) {
 	}
 	return "";
 }
-var nowuser=[];
-var ws=io.createServer(connection=>{
-	console.log('new connection...');
-	var userid=getCookie(connection.headers.cookie,"userid");
-	var username=decodeURIComponent(getCookie(connection.headers.cookie,"username"));
-	var pswd=getCookie(connection.headers.cookie,"pswd");
-	var rating=getCookie(connection.headers.cookie,"rating");
-	var vip=0;
-	//console.log(userid,username,pswd);
-	var sql = 'SELECT * FROM users WHERE id='+userid;
-	db.query(sql,(err,result)=>{
-		if(err){
-			console.error(err);
-			connection.close();
-		}else if(result.length==0||result[0].pswd!=pswd||result[0].name!=username||result[0].rating!=rating){
-			console.log('pswd or username or rating err');
-			connection.close();
-		}else{
-			vip=calcvip(result[0].donation)
-			console.log(username,vip);
-		}
-	});
-	if(nowuser.indexOf(userid)!=-1){
-		connection.close();
-		return;
-	}
-	nowuser.push(userid);
-	var updatecnt=()=>{
-		count=[0,0,0,0,0,0];
-		wcount=[0,0,0];
-		member.forEach((x)=>{count[x.type]++;x.weather.forEach((y)=>{if(weathername.indexOf(y)>=0)wcount[weathername.indexOf(y)]++;})});
-		ws.connections.forEach((connection)=>{
-			connection.send(JSON.stringify({'typ':'count change','tot':member.length,'count':count,'wcount':wcount}));
+const everyadd=config.everyadd;
+const eachturn=config.eachturn;
+const guanji=config.guaji;
+io.of(/\/room\w{1,3}/);
+io.on("new_namespace", (namespace) => {
+	var start=false;
+	var players=[];
+	var map=[];
+	var users=[];
+	var n,m;
+	var turn=0;
+	var rank=[];
+	var his=[];
+	var dieturn=[];
+	var member=[];
+	var count=[0,0,0,0,0,0];
+	var wcount=[0,0,0]
+	var type;
+	var weather;
+	var ltx=undefined,lty=undefined;
+	var nowuser=[];
+	io.of(namespace.name).on("connection", (socket) => {
+        console.log(socket.id);
+		var userid=socket.handshake.auth.userid;
+		var username=socket.handshake.auth.username;
+		var pswd=socket.handshake.auth.pswd;
+		var rating=socket.handshake.auth.rating;
+		var vip=socket.handshake.auth.vip;
+		console.log(userid,username,pswd,rating,vip);
+		var sql='SELECT * FROM users WHERE id='+userid;
+		db.query(sql,(err,result)=>{
+			if(err){
+				console.error(err);
+				socket.disconnect();
+			}else if(result.length==0||result[0].pswd!=pswd||result[0].name!=username||result[0].rating!=rating||vip!=calcvip(result[0].donation)){
+				console.log('pswd or username or rating or vip err');
+				socket.disconnect();
+			}
 		});
-	}
-	var quit=()=>{
-		for(var i=0;i<member.length;i++)if(member[i].uid==userid)member.splice(i,1);
-	}
-	var join=(tp,wt)=>{
-		member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':wt});
-	}
-	connection.on("text",(data)=>{
-		data=JSON.parse(data);
-		//console.log(data);
-		if(data.typ=='startgame'){
+		if(nowuser.indexOf(userid)!=-1){
+			socket.disconnect();
+			return;
+		}
+		nowuser.push(userid);
+		var updatecnt=()=>{
+			count=[0,0,0,0,0,0];
+			wcount=[0,0,0];
+			member.forEach((x)=>{count[x.type]++;x.weather.forEach((y)=>{if(weathername.indexOf(y)>=0)wcount[weathername.indexOf(y)]++;})});
+			namespace.emit('count change',{'tot':member.length,'count':count,'wcount':wcount});
+		}
+		var quit=()=>{for(var i=0;i<member.length;i++)if(member[i].uid==userid)member.splice(i,1);}
+		var join=(tp,wt)=>{member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':wt});}
+
+		socket.on('startgame',(data)=>{
 			if(!start&&member.length>1){
 				start=true;
 				var mx=0;
@@ -387,9 +402,7 @@ var ws=io.createServer(connection=>{
 				for(var i=0;i<n;i++)for(var j=0;j<m;j++)
 					if((map[i][j][0]!=1&&map[i][j][0]!=-1&&map[i][j][0]!=3)||type=="dark"||type=="yinjian")firstmap+="0";
 					else firstmap+="1";
-				ws.connections.forEach((connection)=>{
-					connection.send(JSON.stringify({'typ':'init game','n':n,'m':m,'firstmap':firstmap,'users':users}));
-				});
+				namespace.emit('init game',{'n':n,'m':m,'firstmap':firstmap,'users':users});
 				his[0]=JSON.parse(JSON.stringify(map));
 				var timer=setInterval(()=>{
 					++turn;
@@ -554,9 +567,7 @@ var ws=io.createServer(connection=>{
 							if(err){
 								console.error(err);
 							}else{
-								ws.connections.forEach((connection)=>{
-									connection.send(JSON.stringify({'typ':'end','lstmap':map,'lstrank':rank,'name':result.insertId}));
-								});
+								namespace.emit('end',{'lstmap':map,'lstrank':rank,'name':result.insertId});
 								fs.writeFileSync(path.join(__dirname,'replay',result.insertId+'.json'),JSON.stringify(his))
 								start=false;
 								canjoin=true;
@@ -575,14 +586,12 @@ var ws=io.createServer(connection=>{
 							}
 						});
 					}else{
-						ws.connections.forEach((connection)=>{
-							connection.send(JSON.stringify({'typ':'new turn','turn':turn,'rank':rank}));
-						});
+						namespace.emit('new turn',{'turn':turn,'rank':rank});
 					}
 				},eachturn);
 			}
-		}
-		if(data.typ=='get map'){
+		})
+		socket.on('get map',(data)=>{
 			//console.log(players,data);
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				players[id].lstmap=pred(players[id].lstmap,(turn+1)%everyadd==0,turn%2==1);
@@ -600,76 +609,69 @@ var ws=io.createServer(connection=>{
 							else now=[-3];
 						}else now=JSON.parse(JSON.stringify(map[i][j]));
 						if(now.toString()!=players[id].lstmap[i][j].toString()){
-							//console.log(id,i,j,now,map[i][j]);
 							players[id].lstmap[i][j]=now;
 							diff[diff.length]=[i,j,now];
 						}
 					}
 				}
 				if(data.full)
-					connection.send(JSON.stringify({'typ':'map','ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()}))
+					socket.emit('map',{'ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()})
 				else
-					connection.send(JSON.stringify({'typ':'map','ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()}));
+					socket.emit('map',{'ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()});
 				return;
 			}
-			connection.send(JSON.stringify({'typ':'map','ltx':ltx,'lty':lty,'val':false,'full':false,'diff':[],'queue':""}));
-		}
-		if(data.typ=='add queue'){
+			socket.emit('map',{'ltx':ltx,'lty':lty,'val':false,'full':false,'diff':[],'queue':""});
+		})
+		socket.on('add queue',(data)=>{
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				players[id].queue.addBack(data.data);
 				players[id].lstvis=turn;
 			}
-		}
-		if(data.typ=='pop queue'){
+		})
+		socket.on('pop queue',(data)=>{
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				if(players[id].queue.size())players[id].queue.popBack();
 				players[id].lstvis=turn;
 			}
-		}
-		if(data.typ=='clear queue'){
+		})
+		socket.on('clear queue',(data)=>{
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){
 				if(players[id].queue.size())players[id].queue.clear();
 				players[id].lstvis=turn;
 			}
-		}
-		if(data.typ=="surrender"){
+		})
+		socket.on("surrender",(data)=>{
 			for(var id=0;id<players.length;id++)if(players[id].alive&&players[id].uid==userid){
 				players[id].alive=false;
 				dieturn[dieturn.length]=id;
 			}
-		}
-		if(data.typ=="type change"){
+		})
+		socket.on("type change",(data)=>{
+			console.log('type change');
 			if(!start){
 				quit();
 				if(typename.indexOf(data.type)>=0)
 					join(typename.indexOf(data.type),data.weather);
 				updatecnt();
 			}
-		}
-		if(data.typ=="weather change"){
+		})
+		socket.on("weather change",(data)=>{
 			if(!start){
 				for(var i=0;i<member.length;i++)
 					if(member[i].uid==userid)
 						member[i].weather=data.type;
 				updatecnt();
 			}
-		}
-	})
-	connection.on("close", function (code, reason) {
-		console.log("Connection closed");
-		quit();
-		updatecnt();
-		if(nowuser.indexOf(userid)!=-1)nowuser.splice(nowuser.indexOf(userid));
-	})
-	connection.on("error",() => {
-		console.log('服务异常关闭...');
-		quit();
-		updatecnt();
-		ws.connections.forEach((connection)=>{connection.send(JSON.stringify({'typ':'count change','count':count}));});
-		if(nowuser.indexOf(userid)!=-1)nowuser.splice(nowuser.indexOf(userid));
-	})
-	if(start)connection.send(JSON.stringify({'typ':'already start','n':n,'m':m,'users':users}));
-	connection.send(JSON.stringify({'typ':'count change','tot':member.length,'count':count,'wcount':wcount}));
+		})
+
+		if(start)socket.emit('already start',{'n':n,'m':m,'users':users});
+		socket.emit('count change',{'tot':member.length,'count':count,'wcount':wcount});
+        socket.on("disconnect",()=>{
+			console.log("Connection closed");
+			quit();updatecnt();
+			if(nowuser.indexOf(userid)!=-1)nowuser.splice(nowuser.indexOf(userid));
+		})
+    });
 });
-ws.listen(3000)
-var server = app.listen(config.port)
+server.listen(3000);
+var mainserver=app.listen(config.port)
