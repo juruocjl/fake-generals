@@ -61,7 +61,6 @@ app.get('/', function (req,res) {
 })
 app.get('/room/*', function (req,res) {
 	//console.log(req.session.userid,req.session.pswd)
-	console.log('room')
 	if(req.session.userid&&req.session.pswd){
 		var sql = 'SELECT * FROM users WHERE id='+req.session.userid;
 		db.query(sql,(err,result)=>{
@@ -283,8 +282,9 @@ function getCookie(cookie,cname) {
 const everyadd=config.everyadd;
 const eachturn=config.eachturn;
 const guanji=config.guaji;
-io.of(/\/room\w{1,3}/);
+io.of(/^\/room\d{1,3}$/);
 io.on("new_namespace", (namespace) => {
+	console.log(namespace.name);
 	var start=false;
 	var players=[];
 	var map=[];
@@ -328,7 +328,7 @@ io.on("new_namespace", (namespace) => {
 			count=[0,0,0,0,0,0];
 			wcount=[0,0,0];
 			member.forEach((x)=>{count[x.type]++;x.weather.forEach((y)=>{if(weathername.indexOf(y)>=0)wcount[weathername.indexOf(y)]++;})});
-			namespace.emit('count change',{'tot':member.length,'count':count,'wcount':wcount});
+			namespace.emit('count change',{'tot':member.length,'member':member,'count':count,'wcount':wcount});
 		}
 		var quit=()=>{for(var i=0;i<member.length;i++)if(member[i].uid==userid)member.splice(i,1);}
 		var join=(tp,wt)=>{member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':wt});}
@@ -665,7 +665,7 @@ io.on("new_namespace", (namespace) => {
 		})
 
 		if(start)socket.emit('already start',{'n':n,'m':m,'users':users});
-		socket.emit('count change',{'tot':member.length,'count':count,'wcount':wcount});
+		namespace.emit('count change',{'tot':member.length,'member':member,'count':count,'wcount':wcount});
         socket.on("disconnect",()=>{
 			console.log("Connection closed");
 			quit();updatecnt();

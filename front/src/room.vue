@@ -1,7 +1,7 @@
 <script setup>
 import { ref ,computed, watch } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
-import {Search,Info,Income,RankingList,SettingOne,SunOne,Moon} from '@icon-park/vue-next';
+import {Search,Info,Income,RankingList,SettingOne,SunOne,Moon,Peoples} from '@icon-park/vue-next';
 import { createGlobalState, useStorage } from '@vueuse/core'
 import { io } from "socket.io-client"
 const useState = createGlobalState(() =>
@@ -50,7 +50,7 @@ var socket = io("http://"+location.hostname+":3000/room"+window.location.pathnam
 	rating:rating,
 	vip:vip
 }});
-
+const typename=["ffa","伞兵大战","浓雾模式","掉坑模式","阴间模式","团队模式"];
 const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {
@@ -73,6 +73,7 @@ let turn=ref('?');
 let type=ref('');
 let weather=ref([]);
 let totpeople=ref(0);
+let nowmember=ref([]);
 let count=ref([0,0,0,0,0,0]);
 let wcount=ref([0,0,0]);
 let size=ref(30);
@@ -94,6 +95,10 @@ function showrank(){
 		if(response.data.status=="success")
 			ranking_content.value=response.data.data;
 	})
+}
+let npeoples=ref(false);
+function showpeople(){
+	npeoples.value=true;
 }
 let dranking=ref(false);
 let dranking_content=ref({});
@@ -279,6 +284,7 @@ socket.on("count change",(data)=>{
 	totpeople.value=data.tot;
 	count.value=data.count;
 	wcount.value=data.wcount;
+	nowmember.value=data.member;
 })
 socket.on('init game',(data)=>{
 	start.value=true;
@@ -384,7 +390,7 @@ socket.on('end',(data)=>{
     </template>
     <template #default>
 		<el-input-number v-model="name" @change="handleChange" /> 
-		<el-link type="primary" v-bind:href="'replay?name='+name" target="_blank" v-if="qrating_content.status=='success'">回放</el-link>
+		<el-link type="primary" v-bind:href="'/replay?name='+name" target="_blank" v-if="qrating_content.status=='success'">回放</el-link>
 		<br><br>
         <el-table :data="qrating_content.data" stripe style="width: 100%" v-if="qrating_content.status=='success'">
 			<el-table-column label="排名" v-slot="slotProps" width="60" align="center">
@@ -435,29 +441,51 @@ socket.on('end',(data)=>{
 		</el-button-group>
     </template>
 	</el-drawer>
+	<el-drawer
+		v-model="npeoples"
+		:direction="'ltr'"
+	>
+	<template #title>
+      <h1>当前人数</h1>
+    </template>
+    <template #default>
+        <el-table :data="nowmember" stripe style="width: 100%">
+			<el-table-column label="用户名" v-slot="slotProps" align="center">
+				<span v-html="showname(slotProps.row.name,slotProps.row.rating)"></span>
+			</el-table-column>
+			<el-table-column label="选择" v-slot="slotProps" align="center">
+				<span v-html="typename[slotProps.row.type]"></span>
+			</el-table-column>
+		</el-table>
+    </template>
+	</el-drawer>
 	 <el-menu
     class="el-menu-vertical-demo"
 	:collapse="true"
 	style="position:fixed;right:0;bottom:0"
     v-if="!start"
 	>
-    <el-menu-item index="1" @click="showqrating()">
+    <el-menu-item index="1" @click="showpeople()">
+      <peoples theme="outline" size="24" fill="#333"/>
+      <template #title>当前在线</template>
+    </el-menu-item>
+    <el-menu-item index="2" @click="showqrating()">
       <search theme="outline" size="24" fill="#333"/>
       <template #title>Rating查询</template>
     </el-menu-item>
-	<el-menu-item index="2" @click="showinfo()">
+	<el-menu-item index="3" @click="showinfo()">
       <info theme="outline" size="24" fill="#333"/>
       <template #title>说明</template>
     </el-menu-item>
-	<el-menu-item index="3" @click="showdrank();">
+	<el-menu-item index="4" @click="showdrank();">
       <income theme="outline" size="24" fill="#333"/>
       <template #title>donation榜</template>
     </el-menu-item>
-	<el-menu-item index="4" @click="showrank();">
+	<el-menu-item index="5" @click="showrank();">
       <ranking-list theme="outline" size="24" fill="#333"/>
       <template #title>Rating榜</template>
     </el-menu-item>
-	<el-menu-item index="5" @click="showsetting();">
+	<el-menu-item index="6" @click="showsetting();">
       <setting-one theme="outline" size="24" fill="#333"/>
       <template #title>设置</template>
     </el-menu-item>
