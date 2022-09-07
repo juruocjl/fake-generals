@@ -69,9 +69,10 @@ function pred(Map,val,add){
 }
 function bgcolor(i,j){
 	if(map.value[i][j][0]==-2||map.value[i][j][0]==-3)return "#565656";
-	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#b3b3b3";
+	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#a3a3a3";
 	if(map.value[i][j][0]==0){
 		if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
+		else if(map.value[i][j][2]!=0)return '#aaa';
 		else return "#d7d7d7";
 	}
 	if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
@@ -207,7 +208,7 @@ function Start(){
 	<table cellspacing="0" cellpadding="0" border="0" v-if="start" v-bind:style="{'--size':size+'px','font-size':Math.min(10,Math.floor((now+32)/7))+'px'}">
 		 <tbody class="map" id="map" @mousedown="moused" @mouseup="mouseu" @mousewheel="mousew">
 		 	<tr v-for="i in n">
-				<td v-for="j in m" v-bind:style="{background:bgcolor(i-1,j-1)}" v-bind:class="{cell:true,nowpos:nowx==i-1&&nowy==j-1}" @click="setnow(i-1,j-1)">
+				<td v-for="j in m" v-bind:style="{background:bgcolor(i-1,j-1)}" v-bind:class="{cell:true,nowpos:nowx==i-1&&nowy==j-1}">
 					<span v-bind:class="{
 						num:true,
 						unknow:map[i-1][j-1][0]==-3,

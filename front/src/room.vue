@@ -161,9 +161,10 @@ function pred(Map,val,add){
 }
 function bgcolor(i,j){
 	if(map.value[i][j][0]==-2||map.value[i][j][0]==-3)return "#565656";
-	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#b3b3b3";
+	if(map.value[i][j][0]==-1||map.value[i][j][0]==5)return "#a3a3a3";
 	if(map.value[i][j][0]==0){
 		if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];
+		else if(map.value[i][j][2]!=0)return '#aaa';
 		else return "#d7d7d7";
 	}
 	if(map.value[i][j][1]>=0)return state.value.color[map.value[i][j][1]];

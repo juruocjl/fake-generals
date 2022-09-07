@@ -428,9 +428,6 @@ io.on("new_namespace", (namespace) => {
 												else val=Math.floor(map[now[0]][now[1]][2]/2);
 												//console.log(map[xx][yy],val);
 												map[now[0]][now[1]][2]-=val;
-												if(now.length==5&&weather.wind)
-													xx+=Math.floor(Math.random()*3)-1,
-													yy+=Math.floor(Math.random()*3)-1;
 												if(xx<0||xx>=n||yy<0||yy>=m||
 													map[xx][yy][0]==-1||map[xx][yy][0]==5);
 												else if(map[xx][yy][1]>=0&&players[map[xx][yy][1]].team==players[i].team){
@@ -496,11 +493,49 @@ io.on("new_namespace", (namespace) => {
 							mountains.forEach((x)=>{map[x[0]][x[1]]=[0,-1,0];});
 							emptys.forEach((x)=>{map[x[0]][x[1]]=[-1,0,0];});
 						}
-						if((turn+1)%everyadd==0)
+						if((turn+1)%everyadd==0){
 							for(var i=0;i<n;i++)
 								for(var j=0;j<m;j++)
 									if(map[i][j][0]==0&&map[i][j][1]>=0)
 										map[i][j][2]++;
+							if(weather.wind){
+								if(Math.random()<0.5){
+									var i=Math.floor(Math.random()*n);
+									if(Math.random()<0.5){
+										for(var j=0;j+1<m;j++)
+											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
+												if(map[i][j+1][0]!=-1&&map[i][j+1][0]!=5)
+													map[i][j][2]=map[i][j+1][2];
+												else map[i][j][2]=0;
+											}
+									}else{
+										for(var j=m-1;j>0;j--)
+											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
+												if(map[i][j-1][0]!=-1&&map[i][j-1][0]!=5)
+													map[i][j][2]=map[i][j-1][2];
+												else map[i][j][2]=0;
+											}
+									}
+								}else{
+									var j=Math.floor(Math.random()*m);
+									if(Math.random()<0.5){
+										for(var i=0;i+1<n;i++)
+											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
+												if(map[i+1][j][0]!=-1&&map[i+1][j][0]!=5)
+													map[i][j][2]=map[i+1][j][2];
+												else map[i][j][2]=0;
+											}
+									}else{
+										for(var i=n-1;i>0;i--)
+											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
+												if(map[i-1][j][0]!=-1&&map[i-1][j][0]!=5)
+													map[i][j][2]=map[i-1][j][2];
+												else map[i][j][2]=0;
+											}
+									}
+								}
+							}
+						}
 					}
 					his[turn]=[['lt',ltx,lty]];
 					for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
