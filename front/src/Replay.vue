@@ -79,13 +79,17 @@ function bgcolor(i,j){
 	else return "#757575";
 }
 var maps=[];
-var ltxs=[],ltys=[];
+var ltxs=[-1],ltys=[-1];
+var wdxs=[-1],wdys=[-1],wdds=[-1];
 let ver = ref(0);
 let turn = ref(0);
 let ltx=computed(()=>{return ltxs[turn.value];});
 let lty=computed(()=>{return ltys[turn.value];});
+let wdx=computed(()=>{return wdxs[turn.value];});
+let wdy=computed(()=>{return wdys[turn.value];});
+let wdd=computed(()=>{return wdds[turn.value];});
 let map=computed(()=>{return maps[turn.value];})
-let rank = computed(()=>{
+let rank=computed(()=>{
 	var arr=[];
 	for(var i=0;i<userlist.value.length;i++)arr[i]=[0,0];
 	for(var i=0;i<n.value;i++)for(var j=0;j<m.value;j++)if(map.value[i][j][0]>=0&&map.value[i][j][1]>=0){
@@ -150,13 +154,14 @@ function Start(){
 			m.value=data.his[0][0].length;
 			userlist.value=data.users;
 			var cnt=data.his.length;
-			maps[0]=data.his[0];ltxs[0]=ltys[0]=-1;
+			maps[0]=data.his[0];
 			var everyadd=data.everyadd;
 			for(var i=1;i<data.his.length;i++){
-				ltxs[i]=ltys[i]=-1;
+				ltxs[i]=ltys[i]=wdxs[i]=wdys[i]=wdds[i]=-1;
 				maps[i]=pred(maps[i-1],(i+1)%everyadd==0,(data.ver>=2)?i%2==1:true);
 				data.his[i].forEach((x)=>{
 					if(x[0]=='lt'||x[0]=='lightning')ltxs[i]=x[1],ltys[i]=x[2];
+					else if(x[0]=='wd')wdxs[i]=x[1],wdys[i]=x[2],wdds[i]=x[3];
 					else maps[i][x[0]][x[1]]=x[2];
 				});
 			}
@@ -222,6 +227,7 @@ function Start(){
 						water:map[i-1][j-1][0]==4
 					}">{{nowx==i-1&&nowy==j-1&&op==1?"50%":(map[i-1][j-1][2]?map[i-1][j-1][2]:"")}}</span>
 					<span class="lightning" v-if="ltx==i-1&&lty==j-1"></span>
+					<span class="wind" v-if="wdx==i-1||wdy==j-1"></span>
 				</td>
 			</tr>
 		 </tbody>

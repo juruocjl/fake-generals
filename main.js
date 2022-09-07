@@ -299,7 +299,8 @@ io.on("new_namespace", (namespace) => {
 	var wcount=[0,0,0]
 	var type;
 	var weather;
-	var ltx=undefined,lty=undefined;
+	var ltx=-1,lty=-1;
+	var wdx=-1,wdy=-1,wdd=-1;
 	var nowuser=[];
 	io.of(namespace.name).on("connection", (socket) => {
         console.log(socket.id);
@@ -464,8 +465,8 @@ io.on("new_namespace", (namespace) => {
 											}
 						}
 					}
-					ltx=lty=-1;
 					if(turn%2==1){
+						ltx=lty=wdx=wdy=wdd=-1;
 						for(var i=0;i<n;i++)
 							for(var j=0;j<m;j++)
 								if((map[i][j][0]==1||map[i][j][0]==3)&&map[i][j][1]>=0)
@@ -502,16 +503,18 @@ io.on("new_namespace", (namespace) => {
 								if(Math.random()<0.5){
 									var i=Math.floor(Math.random()*n);
 									if(Math.random()<0.5){
-										for(var j=0;j+1<m;j++)
+										wdx=i,wdd=0;
+										for(var j=0;j<m;j++)
 											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
-												if(map[i][j+1][0]!=-1&&map[i][j+1][0]!=5)
+												if(j+1<m&&map[i][j+1][0]!=-1&&map[i][j+1][0]!=5)
 													map[i][j][2]=map[i][j+1][2];
 												else map[i][j][2]=0;
 											}
 									}else{
-										for(var j=m-1;j>0;j--)
+										wdx=i,wdd=1;
+										for(var j=m-1;j>=0;j--)
 											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
-												if(map[i][j-1][0]!=-1&&map[i][j-1][0]!=5)
+												if(j>0&&map[i][j-1][0]!=-1&&map[i][j-1][0]!=5)
 													map[i][j][2]=map[i][j-1][2];
 												else map[i][j][2]=0;
 											}
@@ -519,16 +522,18 @@ io.on("new_namespace", (namespace) => {
 								}else{
 									var j=Math.floor(Math.random()*m);
 									if(Math.random()<0.5){
-										for(var i=0;i+1<n;i++)
+										wdy=j,wdd=0;
+										for(var i=0;i<n;i++)
 											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
-												if(map[i+1][j][0]!=-1&&map[i+1][j][0]!=5)
+												if(i+1<n&&map[i+1][j][0]!=-1&&map[i+1][j][0]!=5)
 													map[i][j][2]=map[i+1][j][2];
 												else map[i][j][2]=0;
 											}
 									}else{
-										for(var i=n-1;i>0;i--)
+										wdy=j,wdd=1;
+										for(var i=n-1;i>=0;i--)
 											if(map[i][j][0]!=-1&&map[i][j][0]!=5){
-												if(map[i-1][j][0]!=-1&&map[i-1][j][0]!=5)
+												if(i>0&&map[i-1][j][0]!=-1&&map[i-1][j][0]!=5)
 													map[i][j][2]=map[i-1][j][2];
 												else map[i][j][2]=0;
 											}
@@ -537,7 +542,7 @@ io.on("new_namespace", (namespace) => {
 							}
 						}
 					}
-					his[turn]=[['lt',ltx,lty]];
+					his[turn]=[['lt',ltx,lty],['wd',wdx,wdy,wdd]];
 					for(var i=0;i<n;i++)for(var j=0;j<m;j++)if(map[i][j].toString()!=predMap[i][j].toString())
 						his[turn].push([i,j,JSON.parse(JSON.stringify(map[i][j]))]);
 					//console.log(his[turn]);
@@ -650,12 +655,12 @@ io.on("new_namespace", (namespace) => {
 					}
 				}
 				if(data.full)
-					socket.emit('map',{'ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()})
+					socket.emit('map',{'ltx':ltx,'lty':lty,'wdx':wdx,'wdy':wdy,'wdd':wdd,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':true,'map':players[id].lstmap,'queue':players[id].queue.to_string()})
 				else
-					socket.emit('map',{'ltx':ltx,'lty':lty,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()});
+					socket.emit('map',{'ltx':ltx,'lty':lty,'wdx':wdx,'wdy':wdy,'wdd':wdd,'val':(turn+1)%everyadd==0,'add':turn%2==1,'full':false,'diff':diff,'queue':players[id].queue.to_string()});
 				return;
 			}
-			socket.emit('map',{'ltx':ltx,'lty':lty,'val':false,'full':false,'diff':[],'queue':""});
+			socket.emit('map',{'ltx':ltx,'lty':lty,'wdx':wdx,'wdy':wdy,'wdd':wdd,'val':false,'full':false,'diff':[],'queue':""});
 		})
 		socket.on('add queue',(data)=>{
 			for(var id=0;id<players.length;id++)if(players[id].uid==userid){

@@ -79,8 +79,8 @@ let wcount=ref([0,0,0]);
 let size=ref(30);
 let ranking=ref(false);
 let ranking_content=ref({});
-let ltx=ref(-1);
-let lty=ref(-1);
+let ltx=ref(-1),lty=ref(-1);
+let wdx=ref(-1),wdy=ref(-1),wdd=ref(-1);
 watch(type,(newvalue)=>{
 	//console.log(newvalue);
 	socket.emit('type change',{'type':newvalue,'weather':weather.value});
@@ -309,9 +309,10 @@ socket.on('map',(data)=>{
 	if(!data.full){
 		map.value=pred(map.value,data.val,data.add);
 		for(var i=0;i<data.diff.length;i++)
-			map.value[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];
-		ltx.value=data.ltx,lty.value=data.lty;
-	}else map.value=data.map,ltx.value=data.ltx,lty.value=data.lty,notinit=false;
+			map.value[data.diff[i][0]][data.diff[i][1]]=data.diff[i][2];	
+	}else map.value=data.map,notinit=false;
+	ltx.value=data.ltx,lty.value=data.lty;
+	wdx.value=data.wdx,wdy.value=data.wdy,wdd.value=data.wdd;
 	Q.value.from_string(data.queue);
 })
 socket.on('end',(data)=>{
@@ -563,6 +564,7 @@ socket.on('end',(data)=>{
 					<span class='left' v-if="vis[i-1][j-1][2]"></span>
 					<span class='right' v-if="vis[i-1][j-1][3]"></span>
 					<span class="lightning" v-if="ltx==i-1&&lty==j-1"></span>
+					<span class="wind" v-if="wdx==i-1||wdy==j-1"></span>
 				</td>
 			</tr>
 		 </tbody>
