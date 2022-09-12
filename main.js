@@ -335,7 +335,10 @@ io.on("new_namespace", (namespace) => {
 		var join=(tp,wt)=>{member.push({'uid':userid,'name':username,'vip':vip,'rating':parseInt(rating),'type':tp,'weather':wt});}
 
 		socket.on('startgame',(data)=>{
-			if(!start&&member.length>1){
+			if(!start&&member.length>1&& (()=>{
+				for(var i=0;i<member.length;i++)if(member[i].uid==userid)return true;
+				return false;
+			})()){
 				start=true;
 				var mx=0;
 				count.forEach((x)=>{mx=Math.max(mx,x)});
