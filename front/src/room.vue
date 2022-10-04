@@ -509,6 +509,7 @@ socket.on('end',(data)=>{
 				<el-radio-button label="toxins">掉坑模式 ({{count[3]}})</el-radio-button>
 				<el-radio-button label="yinjian">阴间模式 ({{count[4]}})</el-radio-button>
 				<el-radio-button label="team">团队模式 ({{count[5]}})</el-radio-button>
+				<el-radio-button label="mys">神秘模式 ({{count[6]}})</el-radio-button>
 			</el-radio-group><br>
 			<el-checkbox-group v-model="weather" size="middle" :disabled="type==''">
 				<el-checkbox-button label="lightning">

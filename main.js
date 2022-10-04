@@ -249,7 +249,7 @@ class Deque {
 	from_string(a){this.clear();for(i=0;i<a.length;){var l=parseInt(a[i]);var tmp=[];i++;for(var j=0;j<l;i++,j++)tmp[j]=id[a[i]];this.addBack(tmp);}}
 	to_array(){var a=[];for(var i=this.lowestCount;i<this.count;i++)a[i-this.lowestCount]=this.items[i];return a;}
 };
-const typename=["ffa","sb","dark","toxins","yinjian","team"];
+const typename=["ffa","sb","dark","toxins","yinjian","team","mys"];
 const weathername=["lightning","earthquake","wind"]
 function pred(Map,val,add){
 	Map=JSON.parse(JSON.stringify(Map));
@@ -295,7 +295,7 @@ io.on("new_namespace", (namespace) => {
 	var his=[];
 	var dieturn=[];
 	var member=[];
-	var count=[0,0,0,0,0,0];
+	var count=[0,0,0,0,0,0,0];
 	var wcount=[0,0,0]
 	var type;
 	var weather;
@@ -326,7 +326,7 @@ io.on("new_namespace", (namespace) => {
 		}
 		nowuser.push(userid);
 		var updatecnt=()=>{
-			count=[0,0,0,0,0,0];
+			count=[0,0,0,0,0,0,0];
 			wcount=[0,0,0];
 			member.forEach((x)=>{count[x.type]++;x.weather.forEach((y)=>{if(weathername.indexOf(y)>=0)wcount[weathername.indexOf(y)]++;})});
 			namespace.emit('count change',{'tot':member.length,'member':member,'count':count,'wcount':wcount});
@@ -383,6 +383,7 @@ io.on("new_namespace", (namespace) => {
 				if(type=="dark")res=gendark.genMap(players.length);
 				if(type=="toxins")res=gentoxins.genMap(players.length);
 				if(type=="yinjian")res=genyinjian.genMap(players.length);
+				if(type=="mys")res=genffa.genMap(players.length);
 				if(type=="team"){
 					var teams=[[],[]];
 					for(var i=0;i<players.length;i++)
@@ -464,6 +465,9 @@ io.on("new_namespace", (namespace) => {
 													else
 														map[xx][yy][2]-=val;
 												}
+												if(map[xx][yy][1]==i&&map[xx][yy][0]==0&&
+													type=="mys"&&(map[now[0]][now[1]][0]==1||map[now[0]][now[1]][0]==2||map[now[0]][now[1]][0]==3))
+													map[xx][yy][0]=map[now[0]][now[1]][0],map[now[0]][now[1]][0]=0;
 												break;
 											}
 						}
@@ -622,7 +626,7 @@ io.on("new_namespace", (namespace) => {
 								users=[];
 								dieturn=[];
 								member=[];
-								count=[0,0,0,0,0,0];
+								count=[0,0,0,0,0,0,0];
 								wcount=[0,0,0];
 								lst=-1;
 								clearInterval(timer);
