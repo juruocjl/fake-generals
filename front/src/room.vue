@@ -50,7 +50,7 @@ var socket = io("http://"+location.hostname+":3000/room"+window.location.pathnam
 	rating:rating,
 	vip:vip
 }});
-const typename=["ffa","伞兵大战","浓雾模式","掉坑模式","阴间模式","团队模式"];
+const typename=["ffa","伞兵大战","浓雾模式","掉坑模式","阴间模式","团队模式","神秘模式"];
 const base="`~!@#$%^&*()_+qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM[];',./{}|:<>?";
 var id=[];for(var i=0;i<base.length;i++)id[base[i]]=i;
 class Deque {
